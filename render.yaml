@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: aiii-app
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: OPENAI_API_KEY
+        fromSecret: OPENAI_API_KEY
+    healthCheckPath: /api/health
+    plan: free</content>
+<parameter name="filePath">/workspaces/aiii/render.yaml
