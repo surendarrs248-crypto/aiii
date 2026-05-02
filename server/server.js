@@ -743,6 +743,7 @@ START TRANSACTION;
 -- DROP TABLE IF EXISTS departments;
 -- DROP DATABASE IF EXISTS company_db;`;
   }
+  if (/(python|pandas)/i.test(lower)) {
     return `# Python: Data Analysis with Pandas and NumPy
 # W3Schools Python Tutorial: https://www.w3schools.com/python/
 # This example demonstrates Python data manipulation using pandas and numpy libraries
