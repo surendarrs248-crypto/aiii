@@ -3620,6 +3620,430 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// New: Weather API endpoint
+app.get('/api/weather', (req, res) => {
+  const { location = 'New York' } = req.query;
+  
+  // Mock weather data (integrate with real API in production)
+  const weatherData = {
+    location: location,
+    current: {
+      temperature: 72,
+      feelsLike: 70,
+      humidity: 65,
+      windSpeed: 8,
+      condition: 'Partly Cloudy',
+      icon: '⛅',
+      lastUpdated: new Date().toISOString(),
+    },
+    forecast: [
+      { day: 'Tomorrow', high: 75, low: 62, condition: 'Sunny', icon: '☀️' },
+      { day: 'Friday', high: 73, low: 61, condition: 'Cloudy', icon: '☁️' },
+      { day: 'Saturday', high: 68, low: 55, condition: 'Rainy', icon: '🌧️' },
+    ],
+    alerts: [],
+    source: 'OpenWeatherMap (Mock)',
+  };
+  
+  res.json({ success: true, data: weatherData });
+});
+
+// New: News/Articles API endpoint
+app.get('/api/news', (req, res) => {
+  const { category = 'all', limit = 10 } = req.query;
+  
+  // Mock news articles
+  const newsArticles = [
+    {
+      id: 1,
+      title: 'AI Breakthrough: New Language Model Achieves Record Accuracy',
+      description: 'Researchers announce a new AI model that outperforms previous benchmarks...',
+      source: 'TechNews Daily',
+      category: 'AI',
+      date: new Date(Date.now() - 3600000).toISOString(),
+      image: '📰',
+      url: 'https://example.com/article-1',
+      sentiment: 'positive',
+      readTime: 5,
+    },
+    {
+      id: 2,
+      title: 'Search Engine Updates: New Algorithm Prioritizes User Experience',
+      description: 'Major search engines announce updates to improve search relevance and UX...',
+      source: 'Web Development Weekly',
+      category: 'Search',
+      date: new Date(Date.now() - 7200000).toISOString(),
+      image: '🔍',
+      url: 'https://example.com/article-2',
+      sentiment: 'neutral',
+      readTime: 4,
+    },
+    {
+      id: 3,
+      title: 'JavaScript Framework Trends: React Remains Top Choice',
+      description: 'Annual survey shows continued dominance of React in web development...',
+      source: 'Developer Central',
+      category: 'Development',
+      date: new Date(Date.now() - 10800000).toISOString(),
+      image: '⚙️',
+      url: 'https://example.com/article-3',
+      sentiment: 'positive',
+      readTime: 6,
+    },
+    {
+      id: 4,
+      title: 'Cloud Computing Market Growing 25% Year-over-Year',
+      description: 'Industry analysts project continued growth in cloud services and adoption...',
+      source: 'Tech Business Quarterly',
+      category: 'Cloud',
+      date: new Date(Date.now() - 14400000).toISOString(),
+      image: '☁️',
+      url: 'https://example.com/article-4',
+      sentiment: 'positive',
+      readTime: 7,
+    },
+  ];
+  
+  const filtered = category === 'all' ? newsArticles : newsArticles.filter(a => a.category === category);
+  
+  res.json({
+    success: true,
+    data: {
+      articles: filtered.slice(0, parseInt(limit)),
+      totalResults: filtered.length,
+      category: category,
+      lastUpdated: new Date().toISOString(),
+    }
+  });
+});
+
+// New: Web Search API endpoint
+app.post('/api/web-search', (req, res) => {
+  const { query = '', limit = 10 } = req.body;
+  
+  if (!query.trim()) {
+    return res.status(400).json({ success: false, message: 'Query is required' });
+  }
+  
+  // Mock web search results
+  const searchResults = [
+    {
+      position: 1,
+      title: `${query} - Overview and Guide`,
+      url: `https://example.com/${query.replace(/\s+/g, '-')}`,
+      snippet: `Learn about ${query} with comprehensive guides and examples. Updated with latest best practices.`,
+      domain: 'example.com',
+      type: 'article',
+    },
+    {
+      position: 2,
+      title: `Best Practices for ${query}`,
+      url: `https://tutorial.com/best-practices-${query}`,
+      snippet: `Expert tips for implementing ${query} effectively. Includes code examples and real-world use cases.`,
+      domain: 'tutorial.com',
+      type: 'guide',
+    },
+    {
+      position: 3,
+      title: `${query} API Documentation`,
+      url: `https://docs.example.com/${query}`,
+      snippet: `Official API documentation for ${query}. Complete reference with examples and error handling.`,
+      domain: 'docs.example.com',
+      type: 'documentation',
+    },
+  ];
+  
+  res.json({
+    success: true,
+    data: {
+      results: searchResults.slice(0, parseInt(limit)),
+      query: query,
+      totalResults: searchResults.length,
+      searchTime: Math.random().toFixed(2) + 's',
+    }
+  });
+});
+
+// New: Trending Topics API endpoint
+app.get('/api/trends', (req, res) => {
+  const { category = 'technology', limit = 10 } = req.query;
+  
+  // Mock trending data
+  const trendingTopics = {
+    trending: [
+      {
+        rank: 1,
+        topic: 'Artificial Intelligence',
+        volume: 'Very High',
+        trend: 'up',
+        articles: 2450,
+        mentions: 15000,
+        growth: '+45%',
+      },
+      {
+        rank: 2,
+        topic: 'Web Development',
+        volume: 'High',
+        trend: 'stable',
+        articles: 1820,
+        mentions: 8500,
+        growth: '+12%',
+      },
+      {
+        rank: 3,
+        topic: 'Cloud Computing',
+        volume: 'High',
+        trend: 'up',
+        articles: 1650,
+        mentions: 7200,
+        growth: '+28%',
+      },
+      {
+        rank: 4,
+        topic: 'Machine Learning',
+        volume: 'Medium',
+        trend: 'up',
+        articles: 1420,
+        mentions: 6100,
+        growth: '+35%',
+      },
+      {
+        rank: 5,
+        topic: 'Cybersecurity',
+        volume: 'Medium',
+        trend: 'up',
+        articles: 980,
+        mentions: 4500,
+        growth: '+22%',
+      },
+    ],
+    category: category,
+    lastUpdated: new Date().toISOString(),
+  };
+  
+  res.json({
+    success: true,
+    data: {
+      ...trendingTopics,
+      trending: trendingTopics.trending.slice(0, parseInt(limit))
+    }
+  });
+});
+
+// New: Comparison endpoint
+app.post('/api/compare', (req, res) => {
+  const { topics = [] } = req.body;
+  
+  if (!topics || topics.length === 0) {
+    return res.status(400).json({ success: false, message: 'Topics array is required' });
+  }
+  
+  // Mock comparison data
+  const comparison = {
+    topics: topics,
+    comparisons: [
+      {
+        name: topics[0] || 'Option A',
+        pros: ['Fast', 'Reliable', 'Easy to use'],
+        cons: ['Limited features', 'Higher cost'],
+        rating: 4.2,
+        price: '$99/month',
+        market: 25,
+      },
+      {
+        name: topics[1] || 'Option B',
+        pros: ['Feature-rich', 'Affordable', 'Great support'],
+        cons: ['Steep learning curve'],
+        rating: 4.5,
+        price: '$49/month',
+        market: 40,
+      },
+      {
+        name: topics[2] || 'Option C',
+        pros: ['Most affordable', 'Open source', 'Active community'],
+        cons: ['Less support', 'Requires technical skill'],
+        rating: 4.0,
+        price: 'Free',
+        market: 35,
+      },
+    ],
+    recommendation: 'Option B offers the best balance of features and price',
+    lastUpdated: new Date().toISOString(),
+  };
+  
+  res.json({ success: true, data: comparison });
+});
+
+// New: Advanced Analysis endpoint
+app.post('/api/analyze', (req, res) => {
+  const { query = '', depth = 'basic' } = req.body;
+  
+  if (!query.trim()) {
+    return res.status(400).json({ success: false, message: 'Query is required' });
+  }
+  
+  // Mock analysis data
+  const analysis = {
+    topic: query,
+    depth: depth,
+    overview: `Comprehensive analysis of ${query} including market trends, best practices, and expert insights.`,
+    sections: [
+      {
+        title: 'Executive Summary',
+        content: `${query} is a trending topic with significant market interest and growth potential.`,
+      },
+      {
+        title: 'Industry Trends',
+        content: 'Current market trends indicate 25% year-over-year growth in this sector.',
+      },
+      {
+        title: 'Best Practices',
+        content: 'Expert recommendations highlight efficiency, scalability, and user experience as key factors.',
+      },
+      {
+        title: 'Market Size',
+        content: 'The market for this topic is estimated at $50B globally with 30% annual growth.',
+      },
+      {
+        title: 'Key Players',
+        content: 'Leading companies in this space include major tech firms and innovative startups.',
+      },
+      {
+        title: 'Investment Opportunities',
+        content: 'Venture capital funding in this area has reached record levels in 2024.',
+      },
+    ],
+    sentiment: 'positive',
+    confidence: 0.92,
+    sources: 25,
+    recommendations: [
+      'Focus on core features and user experience',
+      'Monitor competitive landscape closely',
+      'Invest in talent acquisition and retention',
+      'Build strategic partnerships',
+    ],
+    lastUpdated: new Date().toISOString(),
+  };
+  
+  res.json({ success: true, data: analysis });
+});
+
+// New: Market Data endpoint
+app.get('/api/market-data', (req, res) => {
+  // Mock market data
+  const marketData = {
+    lastUpdated: new Date().toISOString(),
+    markets: [
+      {
+        symbol: 'TECH',
+        name: 'Tech Sector Index',
+        price: 5432.10,
+        change: 145.25,
+        changePercent: 2.74,
+        trend: 'up',
+      },
+      {
+        symbol: 'AI',
+        name: 'AI Companies ETF',
+        price: 287.50,
+        change: 12.30,
+        changePercent: 4.47,
+        trend: 'up',
+      },
+      {
+        symbol: 'CLOUD',
+        name: 'Cloud Services Index',
+        price: 412.75,
+        change: -8.50,
+        changePercent: -2.02,
+        trend: 'down',
+      },
+    ],
+  };
+  
+  res.json({ success: true, data: marketData });
+});
+
+// New: Compare results endpoint - enhanced comparison
+app.post('/api/compare-results', (req, res) => {
+  const { query = '', sources = [] } = req.body;
+  
+  if (!query.trim()) {
+    return res.status(400).json({ success: false, message: 'Query is required' });
+  }
+  
+  // Mock comparison of multiple sources
+  const comparison = {
+    query: query,
+    sources: sources.length > 0 ? sources : ['Source A', 'Source B', 'Source C'],
+    analysis: {
+      relevanceScores: {
+        'Source A': 0.92,
+        'Source B': 0.87,
+        'Source C': 0.78,
+      },
+      updateFrequency: {
+        'Source A': 'Daily',
+        'Source B': 'Weekly',
+        'Source C': 'Monthly',
+      },
+      accuracy: {
+        'Source A': '94%',
+        'Source B': '89%',
+        'Source C': '82%',
+      },
+    },
+    recommendation: 'Source A provides the most up-to-date and accurate information',
+    lastUpdated: new Date().toISOString(),
+  };
+  
+  res.json({ success: true, data: comparison });
+});
+
+// New: Research endpoint - comprehensive research
+app.post('/api/research', (req, res) => {
+  const { topic = '', depth = 'standard' } = req.body;
+  
+  if (!topic.trim()) {
+    return res.status(400).json({ success: false, message: 'Topic is required' });
+  }
+  
+  // Mock research data
+  const research = {
+    topic: topic,
+    depth: depth,
+    publications: [
+      {
+        title: `The Complete Guide to ${topic}`,
+        authors: ['Dr. Smith', 'Prof. Johnson'],
+        year: 2024,
+        citations: 1250,
+        url: 'https://example.com/research-1',
+      },
+      {
+        title: `${topic} in Practice: Real-World Applications`,
+        authors: ['Jane Doe', 'John Smith'],
+        year: 2024,
+        citations: 890,
+        url: 'https://example.com/research-2',
+      },
+    ],
+    statistics: {
+      totalPublications: 4250,
+      averageCitations: 85,
+      growthRate: '+32% YoY',
+    },
+    keyFindings: [
+      'Market adoption is accelerating rapidly',
+      'Innovation is driven by enterprise demand',
+      'Collaboration between academia and industry is increasing',
+    ],
+    lastUpdated: new Date().toISOString(),
+  };
+  
+  res.json({ success: true, data: research });
+});
+
 app.use(express.static(path.join(__dirname, '../client/dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));

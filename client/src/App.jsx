@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const categoryOptions = ['All', 'AI Strategy', 'Design', 'Search Tech', 'Security', 'Productivity'];
 const tagOptions = ['All', 'semantic search', 'ux', 'nlp', 'privacy', 'recommendations'];
+const tabOptions = ['Search', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
 const suggestions = [
   'python data analysis',
   'java enterprise development',
@@ -42,11 +43,97 @@ function SearchResultCard({ result }) {
   );
 }
 
+function NewsCard({ article }) {
+  return (
+    <article className="news-card">
+      <div className="news-header">
+        <span className="news-image">{article.image}</span>
+        <div>
+          <h3>{article.title}</h3>
+          <p className="news-meta">{article.source} • {new Date(article.date).toLocaleDateString()}</p>
+        </div>
+      </div>
+      <p className="news-snippet">{article.description}</p>
+      <div className="news-footer">
+        <span className="read-time">📖 {article.readTime} min read</span>
+        <span className={`sentiment ${article.sentiment}`}>{article.sentiment}</span>
+        <a href={article.url} target="_blank" rel="noreferrer" className="news-link">Read more →</a>
+      </div>
+    </article>
+  );
+}
+
+function TrendCard({ trend }) {
+  return (
+    <article className="trend-card">
+      <div className="trend-rank">#{trend.rank}</div>
+      <div className="trend-header">
+        <h3>{trend.topic}</h3>
+        <span className={`trend-indicator ${trend.trend}`}>{trend.trend === 'up' ? '📈' : '📊'}</span>
+      </div>
+      <div className="trend-stats">
+        <div className="stat">
+          <span className="label">Volume:</span>
+          <span className="value">{trend.volume}</span>
+        </div>
+        <div className="stat">
+          <span className="label">Growth:</span>
+          <span className="value">{trend.growth}</span>
+        </div>
+        <div className="stat">
+          <span className="label">Mentions:</span>
+          <span className="value">{trend.mentions.toLocaleString()}</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function WeatherWidget({ data }) {
+  if (!data) return null;
+  
+  return (
+    <div className="weather-widget">
+      <div className="weather-current">
+        <h3>{data.location}</h3>
+        <div className="temperature">
+          <span className="temp-value">{data.current.temperature}°F</span>
+          <span className="weather-icon">{data.current.icon}</span>
+        </div>
+        <p className="weather-condition">{data.current.condition}</p>
+        <div className="weather-details">
+          <div><span>Feels like:</span> {data.current.feelsLike}°F</div>
+          <div><span>Humidity:</span> {data.current.humidity}%</div>
+          <div><span>Wind:</span> {data.current.windSpeed} mph</div>
+        </div>
+      </div>
+      <div className="weather-forecast">
+        <h4>Forecast</h4>
+        <div className="forecast-grid">
+          {data.forecast.map((day, idx) => (
+            <div key={idx} className="forecast-item">
+              <p className="day">{day.day}</p>
+              <p className="icon">{day.icon}</p>
+              <p className="temps">{day.high}°/{day.low}°</p>
+              <p className="condition">{day.condition}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [tag, setTag] = useState('All');
+  const [activeTab, setActiveTab] = useState('Search');
   const [results, setResults] = useState([]);
+  const [newsData, setNewsData] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
+  const [trendsData, setTrendsData] = useState(null);
+  const [analysisData, setAnalysisData] = useState(null);
   const [assistant, setAssistant] = useState({
     title: 'AI code assistant',
     summary: 'Enter a query to get a professional answer or code output with detailed explanations in Python, Java, Dart, React, Node.js, HTML, CSS, or JavaScript.',
@@ -104,6 +191,77 @@ export default function App() {
       setLoading(false);
     }
   }
+
+  async function fetchNews() {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/news');
+      const data = await response.json();
+      setNewsData(data.data);
+    } catch (err) {
+      setError('Failed to fetch news');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchWeather() {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/weather?location=New York');
+      const data = await response.json();
+      setWeatherData(data.data);
+    } catch (err) {
+      setError('Failed to fetch weather');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchTrends() {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/trends');
+      const data = await response.json();
+      setTrendsData(data.data);
+    } catch (err) {
+      setError('Failed to fetch trends');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchAnalysis() {
+    try {
+      if (!query.trim()) {
+        setError('Please enter a query to analyze');
+        return;
+      }
+      setLoading(true);
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query, depth: 'standard' })
+      });
+      const data = await response.json();
+      setAnalysisData(data.data);
+    } catch (err) {
+      setError('Failed to fetch analysis');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    // Load data when tab changes
+    if (activeTab === 'News' && !newsData) {
+      fetchNews();
+    } else if (activeTab === 'Weather' && !weatherData) {
+      fetchWeather();
+    } else if (activeTab === 'Trends' && !trendsData) {
+      fetchTrends();
+    }
+  }, [activeTab, newsData, weatherData, trendsData]);
 
   return (
     <div className="app-shell">
@@ -171,65 +329,181 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        <section className="results-panel">
-          <section className="controls-panel">
-            <div className="filter-group">
-              <label htmlFor="categorySelect">Category</label>
-              <select id="categorySelect" value={category} onChange={(e) => setCategory(e.target.value)}>
-                {categoryOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="filter-group">
-              <label htmlFor="tagSelect">Tag</label>
-              <select id="tagSelect" value={tag} onChange={(e) => setTag(e.target.value)}>
-                {tagOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="action-panel">
-              <button onClick={runSearch} disabled={!canSearch || loading}>
-                Refresh results
+        {/* Tab Navigation */}
+        <div className="tabs-navigation">
+          {tabOptions.map((tab) => (
+            <button
+              key={tab}
+              className={`tab-button ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              <span className="tab-icon">
+                {tab === 'Search' && '🔍'}
+                {tab === 'News' && '📰'}
+                {tab === 'Weather' && '🌤️'}
+                {tab === 'Trends' && '📈'}
+                {tab === 'Analysis' && '📊'}
+                {tab === 'Compare' && '⚖️'}
+              </span>
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Tab */}
+        {activeTab === 'Search' && (
+          <section className="results-panel">
+            <section className="controls-panel">
+              <div className="filter-group">
+                <label htmlFor="categorySelect">Category</label>
+                <select id="categorySelect" value={category} onChange={(e) => setCategory(e.target.value)}>
+                  {categoryOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label htmlFor="tagSelect">Tag</label>
+                <select id="tagSelect" value={tag} onChange={(e) => setTag(e.target.value)}>
+                  {tagOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="action-panel">
+                <button onClick={runSearch} disabled={!canSearch || loading}>
+                  Refresh results
+                </button>
+              </div>
+            </section>
+
+            {error && <div className="alert">{error}</div>}
+            <section className="results-summary">
+              <div>
+                <span>{results.length} result{results.length === 1 ? '' : 's'}</span>
+                <p>Showing advanced search results tailored for your query and selected filters.</p>
+              </div>
+              <div className="meta-info">
+                <span>{meta.queryTimeMs} ms</span>
+                <span>{meta.resultCount} fetched</span>
+              </div>
+            </section>
+
+            <section className="results-grid">
+              {loading
+                ? Array.from({ length: 3 }).map((_, index) => (
+                    <div key={index} className="result-card skeleton">
+                      <div className="skeleton-title" />
+                      <div className="skeleton-line" />
+                      <div className="skeleton-line short" />
+                    </div>
+                  ))
+                : results.map((result) => <SearchResultCard key={result.id} result={result} />)}
+              {!loading && results.length === 0 && canSearch && (
+                <div className="empty-state">
+                  <h2>No matches found</h2>
+                  <p>Try broadening your query or switching categories to discover more results.</p>
+                </div>
+              )}
+            </section>
+          </section>
+        )}
+
+        {/* News Tab */}
+        {activeTab === 'News' && (
+          <section className="results-panel">
+            <h2 className="section-title">Latest News & Articles</h2>
+            {error && <div className="alert">{error}</div>}
+            <section className="news-grid">
+              {loading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="news-card skeleton">
+                      <div className="skeleton-title" />
+                      <div className="skeleton-line" />
+                    </div>
+                  ))
+                : newsData?.articles?.map((article) => <NewsCard key={article.id} article={article} />)}
+            </section>
+          </section>
+        )}
+
+        {/* Weather Tab */}
+        {activeTab === 'Weather' && (
+          <section className="results-panel">
+            <h2 className="section-title">Weather Report</h2>
+            {error && <div className="alert">{error}</div>}
+            {loading ? (
+              <div className="loading">Loading weather...</div>
+            ) : (
+              <WeatherWidget data={weatherData} />
+            )}
+          </section>
+        )}
+
+        {/* Trends Tab */}
+        {activeTab === 'Trends' && (
+          <section className="results-panel">
+            <h2 className="section-title">Trending Topics</h2>
+            {error && <div className="alert">{error}</div>}
+            <section className="trends-grid">
+              {loading
+                ? Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="trend-card skeleton">
+                      <div className="skeleton-title" />
+                    </div>
+                  ))
+                : trendsData?.trending?.map((trend) => <TrendCard key={trend.rank} trend={trend} />)}
+            </section>
+          </section>
+        )}
+
+        {/* Analysis Tab */}
+        {activeTab === 'Analysis' && (
+          <section className="results-panel">
+            <h2 className="section-title">Advanced Analysis</h2>
+            {error && <div className="alert">{error}</div>}
+            <div className="analysis-controls">
+              <button onClick={fetchAnalysis} disabled={!canSearch || loading} className="analyze-btn">
+                {loading ? 'Analyzing...' : 'Analyze Query'}
               </button>
             </div>
-          </section>
-
-          {error && <div className="alert">{error}</div>}
-          <section className="results-summary">
-            <div>
-              <span>{results.length} result{results.length === 1 ? '' : 's'}</span>
-              <p>Showing advanced search results tailored for your query and selected filters.</p>
-            </div>
-            <div className="meta-info">
-              <span>{meta.queryTimeMs} ms</span>
-              <span>{meta.resultCount} fetched</span>
-            </div>
-          </section>
-
-          <section className="results-grid">
-            {loading
-              ? Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="result-card skeleton">
-                    <div className="skeleton-title" />
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line short" />
-                  </div>
-                ))
-              : results.map((result) => <SearchResultCard key={result.id} result={result} />)}
-            {!loading && results.length === 0 && canSearch && (
-              <div className="empty-state">
-                <h2>No matches found</h2>
-                <p>Try broadening your query or switching categories to discover more results.</p>
+            {analysisData && (
+              <div className="analysis-content">
+                <h3>{analysisData.topic}</h3>
+                <p className="analysis-overview">{analysisData.overview}</p>
+                <div className="analysis-sections">
+                  {analysisData.sections?.map((section, idx) => (
+                    <div key={idx} className="analysis-section">
+                      <h4>{section.title}</h4>
+                      <p>{section.content}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="analysis-stats">
+                  <div className="stat"><span>Sentiment:</span> <span>{analysisData.sentiment}</span></div>
+                  <div className="stat"><span>Confidence:</span> <span>{(analysisData.confidence * 100).toFixed(0)}%</span></div>
+                  <div className="stat"><span>Sources:</span> <span>{analysisData.sources}</span></div>
+                </div>
               </div>
             )}
           </section>
-        </section>
+        )}
+
+        {/* Compare Tab */}
+        {activeTab === 'Compare' && (
+          <section className="results-panel">
+            <h2 className="section-title">Compare Results</h2>
+            <p className="section-subtitle">Compare different approaches, tools, or solutions for your query</p>
+            {error && <div className="alert">{error}</div>}
+            <div className="compare-content">
+              <p>Search for something first, then use the comparison tools to see pros & cons of different approaches.</p>
+            </div>
+          </section>
+        )}
 
         <aside className="detail-panel">
           <div className="detail-card">
