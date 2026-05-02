@@ -3582,12 +3582,13 @@ Programming Language References:
 
 If it's a general question, give a brief answer. Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.`;
 
-      const completion = await openai.responses.create({
-        model: 'gpt-4.1-mini',
-        input: prompt
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500
       });
 
-      const rawText = completion.output[0]?.content[0]?.text;
+      const rawText = completion.choices[0]?.message?.content;
       if (rawText) {
         const extracted = extractCodeFromResponse(rawText);
         assistant = {
