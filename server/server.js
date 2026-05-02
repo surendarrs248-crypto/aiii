@@ -107,6 +107,14 @@ function extractCodeFromResponse(text) {
   return { answer: text.trim(), codeSnippet: '' };
 }
 
+function isCodeSnippet(text) {
+  if (!text) return false;
+  const trimmed = text.trim();
+  if (trimmed.includes('```')) return true;
+  if (trimmed.split('\n').length > 1 && /[{};=#<>]/.test(trimmed)) return true;
+  return /(^\s*(def |class |function |const |let |var |import |package |public |private |interface |if |for |while |switch |return |print\(|console\.log\(|fetch\(|async ))/m.test(trimmed);
+}
+
 function generateLocalCode(query) {
   const lower = query.toLowerCase();
   if (lower === 'code' || lower.includes('code example') || lower.includes('sample code')) {
@@ -118,7 +126,623 @@ function greetUser(name) { // Define a function named greetUser that takes a nam
 // Usage
 console.log(greetUser('Developer')); // Call the function and log the result to the console`;
   }
-  if (/(python|py)/i.test(lower)) {
+  if (/(c\+\+|cpp)/i.test(lower)) {
+    return `// C++: Object-Oriented Programming with Modern C++ Features
+// W3Schools C++ Tutorial: https://www.w3schools.com/cpp/
+// This example demonstrates C++ OOP concepts, smart pointers, and standard library usage
+
+#include <iostream>  // Include iostream for input/output operations (W3Schools: C++ User Input)
+#include <string>    // Include string for string manipulation (W3Schools: C++ Strings)
+#include <vector>    // Include vector for dynamic arrays (W3Schools: C++ Vectors)
+#include <memory>    // Include memory for smart pointers (W3Schools: C++ Smart Pointers)
+#include <algorithm> // Include algorithm for standard algorithms
+
+// Class definition - blueprint for creating objects (W3Schools: C++ Classes)
+class Person {  // Class declaration
+private:  // Private access specifier - accessible only within class
+    std::string name;  // Private member variable for name
+    int age;          // Private member variable for age
+
+public:  // Public access specifier - accessible from outside
+    // Constructor - initializes object state (W3Schools: C++ Constructors)
+    Person(std::string n, int a) : name(n), age(a) {  // Member initializer list
+        std::cout << "Person created: " << name << std::endl;  // Constructor body
+    }
+
+    // Destructor - cleans up resources (W3Schools: C++ Destructors)
+    ~Person() {  // Destructor definition
+        std::cout << "Person destroyed: " << name << std::endl;  // Cleanup code
+    }
+
+    // Public member function - displays person info
+    void display() const {  // Const member function - doesn't modify object
+        std::cout << "Name: " << name << ", Age: " << age << std::endl;  // Output to console
+    }
+
+    // Getter method - provides controlled access to private data
+    std::string getName() const { return name; }  // Return name (const)
+    int getAge() const { return age; }           // Return age (const)
+
+    // Setter method - allows controlled modification of private data
+    void setAge(int a) {  // Setter with validation
+        if (a >= 0 && a <= 150) {  // Validate age range
+            age = a;  // Set age if valid
+        } else {
+            std::cout << "Invalid age!" << std::endl;  // Error message
+        }
+    }
+};
+
+// Derived class - inheritance from Person (W3Schools: C++ Inheritance)
+class Employee : public Person {  // Public inheritance
+private:
+    std::string department;  // Additional private member
+    double salary;          // Employee salary
+
+public:
+    // Constructor calling base class constructor (W3Schools: C++ Inheritance)
+    Employee(std::string n, int a, std::string dept, double sal)
+        : Person(n, a), department(dept), salary(sal) {}  // Initialize base and derived
+
+    // Override display method - polymorphism (W3Schools: C++ Polymorphism)
+    void display() const override {  // Override keyword for clarity
+        Person::display();  // Call base class method
+        std::cout << "Department: " << department  // Display department
+                  << ", Salary: $" << salary << std::endl;  // Display salary
+    }
+
+    // Method specific to Employee
+    void giveRaise(double percentage) {  // Method to increase salary
+        if (percentage > 0) {  // Validate percentage
+            salary *= (1 + percentage / 100);  // Calculate new salary
+            std::cout << "Salary increased by " << percentage << "%" << std::endl;
+        }
+    }
+};
+
+// Template function - generic programming (W3Schools: C++ Templates)
+template <typename T>  // Template parameter
+T findMax(const std::vector<T>& vec) {  // Function template
+    if (vec.empty()) {  // Check if vector is empty
+        throw std::runtime_error("Vector is empty");  // Throw exception
+    }
+    T maxVal = vec[0];  // Initialize max with first element
+    for (const auto& val : vec) {  // Range-based for loop (W3Schools: C++ For Loop)
+        if (val > maxVal) {  // Compare values
+            maxVal = val;  // Update max
+        }
+    }
+    return maxVal;  // Return maximum value
+}
+
+// Main function - program entry point (W3Schools: C++ main)
+int main() {  // Main function definition
+    std::cout << "=== C++ OOP Demo ===" << std::endl;  // Program header
+
+    // Create objects using smart pointers (W3Schools: C++ Smart Pointers)
+    auto person1 = std::make_unique<Person>("Alice", 30);  // Unique pointer to Person
+    auto employee1 = std::make_shared<Employee>("Bob", 25, "Engineering", 75000);  // Shared pointer to Employee
+
+    // Display information
+    std::cout << "\\nPerson Information:" << std::endl;  // Section header
+    person1->display();  // Call method using pointer
+
+    std::cout << "\\nEmployee Information:" << std::endl;  // Section header
+    employee1->display();  // Call method
+
+    // Modify employee data
+    employee1->giveRaise(10);  // Give 10% raise
+    employee1->display();  // Display updated info
+
+    // Demonstrate polymorphism with base class pointers
+    std::cout << "\\nPolymorphism Demo:" << std::endl;  // Section header
+    std::vector<std::shared_ptr<Person>> people;  // Vector of Person pointers
+    people.push_back(std::make_shared<Person>("Charlie", 35));  // Add Person
+    people.push_back(std::make_shared<Employee>("Diana", 28, "Marketing", 65000));  // Add Employee
+
+    for (const auto& person : people) {  // Iterate through vector
+        person->display();  // Polymorphic call - calls appropriate display()
+        std::cout << std::endl;  // New line
+    }
+
+    // Template function demonstration
+    std::cout << "Template Function Demo:" << std::endl;  // Section header
+    std::vector<int> numbers = {3, 1, 4, 1, 5, 9, 2, 6};  // Vector of integers
+    std::vector<double> decimals = {3.14, 2.71, 1.41, 1.73};  // Vector of doubles
+
+    try {  // Try-catch for exception handling (W3Schools: C++ Exceptions)
+        int maxInt = findMax(numbers);  // Find max in int vector
+        double maxDouble = findMax(decimals);  // Find max in double vector
+        std::cout << "Max integer: " << maxInt << std::endl;  // Display result
+        std::cout << "Max decimal: " << maxDouble << std::endl;  // Display result
+    } catch (const std::exception& e) {  // Catch exceptions
+        std::cerr << "Error: " << e.what() << std::endl;  // Error message
+    }
+
+    // Standard library algorithms (W3Schools: C++ Algorithms)
+    std::cout << "\\nStandard Library Algorithms:" << std::endl;  // Section header
+    std::sort(numbers.begin(), numbers.end());  // Sort vector (W3Schools: C++ Sort)
+    std::cout << "Sorted numbers: ";  // Output label
+    for (int num : numbers) {  // Iterate and display
+        std::cout << num << " ";  // Print each number
+    }
+    std::cout << std::endl;  // New line
+
+    // Lambda expressions - anonymous functions (W3Schools: C++ Lambdas)
+    auto isEven = [](int x) { return x % 2 == 0; };  // Lambda for even check
+    auto evenCount = std::count_if(numbers.begin(), numbers.end(), isEven);  // Count even numbers
+    std::cout << "Even numbers count: " << evenCount << std::endl;  // Display count
+
+    std::cout << "\\nProgram completed successfully!" << std::endl;  // Success message
+    return 0;  // Return success code (W3Schools: C++ main return)
+}`;
+  }
+  if (/(php)/i.test(lower)) {
+    return `<?php
+// PHP: Server-Side Web Development with Object-Oriented Programming
+// W3Schools PHP Tutorial: https://www.w3schools.com/php/
+// This example demonstrates PHP OOP, database interaction, and web development patterns
+
+<?php  // PHP opening tag - indicates start of PHP code execution
+
+// Prevent direct access - security best practice (W3Schools: PHP Security)
+if (!defined('ALLOW_ACCESS')) {  // Check if constant is defined
+    die('Direct access not permitted');  // Terminate script with message
+}
+define('ALLOW_ACCESS', true);  // Define access constant
+
+// Class definition - blueprint for objects (W3Schools: PHP Classes)
+class User {  // Class declaration
+    // Properties - class variables (W3Schools: PHP Properties)
+    private $userId;      // Private property - accessible only within class
+    private $username;    // Private property for username
+    private $email;       // Private property for email
+    private $isActive;    // Private property for active status
+    public static $userCount = 0;  // Static property - shared by all instances
+
+    // Constructor - called when object is created (W3Schools: PHP Constructors)
+    public function __construct($username, $email) {  // Constructor with parameters
+        $this->username = $username;  // Assign parameter to property
+        $this->email = $email;        // Assign email
+        $this->isActive = true;       // Default active status
+        $this->userId = ++self::$userCount;  // Increment and assign ID
+        echo "User {$this->username} created with ID: {$this->userId}<br>";  // Output message
+    }
+
+    // Destructor - called when object is destroyed (W3Schools: PHP Destructors)
+    public function __destruct() {  // Destructor method
+        echo "User {$this->username} is being destroyed<br>";  // Cleanup message
+    }
+
+    // Public methods - accessible from outside class
+    public function getUserInfo() {  // Method to get user information
+        return [  // Return associative array
+            'id' => $this->userId,      // User ID
+            'username' => $this->username,  // Username
+            'email' => $this->email,    // Email
+            'active' => $this->isActive // Active status
+        ];
+    }
+
+    public function updateEmail($newEmail) {  // Method to update email
+        if (filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {  // Validate email format
+            $this->email = $newEmail;  // Update email if valid
+            return true;  // Return success
+        }
+        return false;  // Return failure
+    }
+
+    // Static method - can be called without instance (W3Schools: PHP Static Methods)
+    public static function getTotalUsers() {  // Static method
+        return self::$userCount;  // Return static property
+    }
+
+    // Magic method - toString for object string representation (W3Schools: PHP __toString)
+    public function __toString() {  // Magic method
+        return "User: {$this->username} ({$this->email})";  // String representation
+    }
+}
+
+// Database connection class - demonstrates PDO usage (W3Schools: PHP PDO)
+class Database {  // Database wrapper class
+    private $pdo;  // Private PDO instance
+
+    public function __construct() {  // Constructor
+        try {  // Try-catch for error handling (W3Schools: PHP Try...Catch)
+            // Create PDO connection (W3Schools: PHP PDO Connect)
+            $this->pdo = new PDO(  // PDO constructor
+                "mysql:host=localhost;dbname=userdb",  // DSN string
+                "username",  // Database username
+                "password",  // Database password
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]  // Error mode
+            );
+            echo "Database connected successfully<br>";  // Success message
+        } catch (PDOException $e) {  // Catch PDO exceptions
+            die("Connection failed: " . $e->getMessage());  // Terminate on error
+        }
+    }
+
+    // Method to save user to database
+    public function saveUser(User $user) {  // Method with type hinting
+        $userInfo = $user->getUserInfo();  // Get user data
+        $stmt = $this->pdo->prepare(  // Prepare statement (W3Schools: PHP Prepared Statements)
+            "INSERT INTO users (username, email, is_active) VALUES (?, ?, ?)"  // SQL query
+        );
+        $stmt->execute([  // Execute with parameters
+            $userInfo['username'],  // Username parameter
+            $userInfo['email'],     // Email parameter
+            $userInfo['active'] ? 1 : 0  // Active status as integer
+        ]);
+        return $this->pdo->lastInsertId();  // Return inserted ID
+    }
+
+    // Method to get all users
+    public function getAllUsers() {  // Method to fetch users
+        $stmt = $this->pdo->query("SELECT * FROM users");  // Execute query
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);  // Return associative array
+    }
+}
+
+// Utility functions - demonstrate PHP functions (W3Schools: PHP Functions)
+function validatePassword($password) {  // Function to validate password
+    // Check length and complexity (W3Schools: PHP Regular Expressions)
+    return strlen($password) >= 8 &&  // Minimum length
+           preg_match('/[A-Z]/', $password) &&  // Uppercase letter
+           preg_match('/[a-z]/', $password) &&  // Lowercase letter
+           preg_match('/[0-9]/', $password);    // Number
+}
+
+function formatUserList($users) {  // Function to format user list
+    if (empty($users)) {  // Check if array is empty (W3Schools: PHP Arrays)
+        return "No users found.";  // Return message
+    }
+
+    $output = "<ul>";  // Start unordered list
+    foreach ($users as $user) {  // Foreach loop (W3Schools: PHP Loops)
+        $output .= "<li>{$user['username']} - {$user['email']}</li>";  // List item
+    }
+    $output .= "</ul>";  // End list
+    return $output;  // Return formatted HTML
+}
+
+// Main execution - demonstrates usage
+echo "<h1>PHP OOP and Database Demo</h1>";  // HTML heading
+
+// Create user objects
+$user1 = new User("alice_smith", "alice@example.com");  // Create User instance
+$user2 = new User("bob_jones", "bob@example.com");     // Create another User
+
+echo "<h2>User Information:</h2>";  // Section heading
+echo "<pre>" . print_r($user1->getUserInfo(), true) . "</pre>";  // Display user info
+
+// Update user email
+if ($user1->updateEmail("alice.smith@company.com")) {  // Update email
+    echo "Email updated successfully<br>";  // Success message
+} else {
+    echo "Invalid email format<br>";  // Error message
+}
+
+// Display total users
+echo "Total users created: " . User::getTotalUsers() . "<br>";  // Static method call
+
+// Password validation demo
+$passwords = ["weak", "StrongPass123", "weakpass", "AnotherStrong1"];  // Test passwords
+echo "<h2>Password Validation:</h2>";  // Section heading
+foreach ($passwords as $pwd) {  // Loop through passwords
+    $valid = validatePassword($pwd) ? "Valid" : "Invalid";  // Check validity
+    echo "Password '$pwd': $valid<br>";  // Display result
+}
+
+// Database operations (commented out to avoid actual DB operations)
+// Uncomment the following lines if you have a MySQL database set up
+/*
+$db = new Database();  // Create database instance
+$userId = $db->saveUser($user1);  // Save user to database
+echo "User saved with ID: $userId<br>";  // Display saved ID
+
+$allUsers = $db->getAllUsers();  // Get all users
+echo "<h2>All Users in Database:</h2>";  // Section heading
+echo formatUserList($allUsers);  // Display formatted list
+*/
+
+// Array operations - demonstrate PHP arrays (W3Schools: PHP Arrays)
+$userArray = [  // Associative array
+    "name" => "Charlie Brown",  // Key-value pair
+    "age" => 25,               // Another pair
+    "skills" => ["PHP", "MySQL", "JavaScript"]  // Nested array
+];
+
+echo "<h2>Array Operations:</h2>";  // Section heading
+echo "User name: " . $userArray["name"] . "<br>";  // Access array element
+echo "Skills: " . implode(", ", $userArray["skills"]) . "<br>";  // Join array elements
+
+// Demonstrate object serialization (W3Schools: PHP Serialization)
+$serialized = serialize($user1);  // Serialize object
+echo "<h2>Object Serialization:</h2>";  // Section heading
+echo "Serialized user: " . $serialized . "<br>";  // Display serialized data
+
+$unserialized = unserialize($serialized);  // Unserialize object
+echo "Unserialized user: " . $unserialized . "<br>";  // Display unserialized object
+
+echo "<h2>Script Execution Complete</h2>";  // Completion message
+
+// PHP closing tag - optional but good practice
+?>`;
+  }
+  if (/(sql|database|mysql|postgresql)/i.test(lower)) {
+    return `-- SQL: Database Design and Query Optimization
+-- W3Schools SQL Tutorial: https://www.w3schools.com/sql/
+-- This example demonstrates SQL database operations, joins, and best practices
+
+-- Create database - defines the database container (W3Schools: SQL CREATE DATABASE)
+CREATE DATABASE IF NOT EXISTS company_db;  -- Create database if it doesn't exist
+USE company_db;  -- Select the database to use
+
+-- Create tables - define data structure (W3Schools: SQL CREATE TABLE)
+-- Employees table - stores employee information
+CREATE TABLE employees (  -- Table definition
+    employee_id INT PRIMARY KEY AUTO_INCREMENT,  -- Primary key with auto increment (W3Schools: SQL PRIMARY KEY)
+    first_name VARCHAR(50) NOT NULL,  -- Required field, max 50 characters (W3Schools: SQL NOT NULL)
+    last_name VARCHAR(50) NOT NULL,   -- Required field
+    email VARCHAR(100) UNIQUE NOT NULL,  -- Unique email constraint (W3Schools: SQL UNIQUE)
+    hire_date DATE NOT NULL,  -- Employment start date (W3Schools: SQL DATE)
+    salary DECIMAL(10,2) CHECK (salary > 0),  -- Salary with check constraint (W3Schools: SQL CHECK)
+    department_id INT,  -- Foreign key reference
+    manager_id INT,  -- Self-referencing foreign key
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Auto timestamp (W3Schools: SQL TIMESTAMP)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- Auto update timestamp
+    FOREIGN KEY (department_id) REFERENCES departments(department_id),  -- Foreign key constraint (W3Schools: SQL FOREIGN KEY)
+    FOREIGN KEY (manager_id) REFERENCES employees(employee_id)  -- Self-reference for manager
+);
+
+-- Departments table - stores department information
+CREATE TABLE departments (  -- Department table
+    department_id INT PRIMARY KEY AUTO_INCREMENT,  -- Primary key
+    department_name VARCHAR(100) NOT NULL UNIQUE,  -- Unique department name
+    location VARCHAR(100),  -- Department location
+    budget DECIMAL(12,2),  -- Department budget
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation timestamp
+);
+
+-- Projects table - stores project information
+CREATE TABLE projects (  -- Projects table
+    project_id INT PRIMARY KEY AUTO_INCREMENT,  -- Primary key
+    project_name VARCHAR(200) NOT NULL,  -- Project name
+    description TEXT,  -- Project description (W3Schools: SQL TEXT)
+    start_date DATE,  -- Project start
+    end_date DATE,    -- Project end
+    budget DECIMAL(12,2),  -- Project budget
+    status ENUM('planning', 'active', 'completed', 'cancelled') DEFAULT 'planning',  -- Status enumeration (W3Schools: SQL ENUM)
+    department_id INT,  -- Owning department
+    FOREIGN KEY (department_id) REFERENCES departments(department_id)  -- Foreign key
+);
+
+-- Employee-Project junction table - many-to-many relationship (W3Schools: SQL Many-to-Many)
+CREATE TABLE employee_projects (  -- Junction table
+    employee_id INT,  -- Employee reference
+    project_id INT,   -- Project reference
+    role VARCHAR(50), -- Employee's role in project
+    assigned_date DATE DEFAULT CURRENT_DATE,  -- Assignment date
+    hours_allocated DECIMAL(5,2),  -- Hours allocated to project
+    PRIMARY KEY (employee_id, project_id),  -- Composite primary key (W3Schools: SQL Composite Key)
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id),  -- Foreign key
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)    -- Foreign key
+);
+
+-- Insert sample data - populate tables with data (W3Schools: SQL INSERT INTO)
+INSERT INTO departments (department_name, location, budget) VALUES  -- Insert departments
+('Engineering', 'Building A', 500000.00),
+('Marketing', 'Building B', 300000.00),
+('Sales', 'Building C', 250000.00),
+('HR', 'Building A', 150000.00);
+
+INSERT INTO employees (first_name, last_name, email, hire_date, salary, department_id) VALUES  -- Insert employees
+('John', 'Doe', 'john.doe@company.com', '2023-01-15', 75000.00, 1),
+('Jane', 'Smith', 'jane.smith@company.com', '2023-02-01', 80000.00, 1),
+('Bob', 'Johnson', 'bob.johnson@company.com', '2023-01-20', 65000.00, 2),
+('Alice', 'Williams', 'alice.williams@company.com', '2023-03-10', 70000.00, 3),
+('Charlie', 'Brown', 'charlie.brown@company.com', '2023-02-15', 60000.00, 4);
+
+-- Update manager references - set up hierarchy
+UPDATE employees SET manager_id = 2 WHERE employee_id IN (1, 3);  -- Set managers
+UPDATE employees SET manager_id = 5 WHERE employee_id = 4;  -- Set HR manager
+
+INSERT INTO projects (project_name, description, start_date, end_date, budget, status, department_id) VALUES  -- Insert projects
+('Website Redesign', 'Complete overhaul of company website', '2023-06-01', '2023-12-31', 150000.00, 'active', 1),
+('Marketing Campaign', 'Q3 marketing campaign for new product', '2023-07-01', '2023-09-30', 75000.00, 'planning', 2),
+('CRM Implementation', 'Implement new CRM system', '2023-08-01', '2024-01-31', 200000.00, 'planning', 3);
+
+-- Assign employees to projects
+INSERT INTO employee_projects (employee_id, project_id, role, hours_allocated) VALUES  -- Assign employees
+(1, 1, 'Lead Developer', 160.00),  -- John on website project
+(2, 1, 'Project Manager', 120.00), -- Jane on website project
+(3, 2, 'Marketing Lead', 140.00),  -- Bob on marketing campaign
+(4, 3, 'Sales Rep', 100.00);       -- Alice on CRM project
+
+-- Basic SELECT queries - retrieve data (W3Schools: SQL SELECT)
+-- Select all employees
+SELECT * FROM employees;  -- Select all columns from employees
+
+-- Select specific columns with aliases (W3Schools: SQL Aliases)
+SELECT
+    employee_id AS 'ID',  -- Column alias
+    CONCAT(first_name, ' ', last_name) AS 'Full Name',  -- Concatenated name
+    email AS 'Email Address',  -- Email alias
+    salary AS 'Annual Salary'  -- Salary alias
+FROM employees;
+
+-- WHERE clause - filter results (W3Schools: SQL WHERE)
+SELECT * FROM employees
+WHERE salary > 70000  -- Filter by salary
+AND department_id = 1; -- Filter by department
+
+-- JOIN operations - combine data from multiple tables (W3Schools: SQL JOIN)
+-- Inner join - employees with their departments
+SELECT
+    e.first_name,
+    e.last_name,
+    d.department_name,
+    e.salary
+FROM employees e  -- Table alias 'e'
+INNER JOIN departments d ON e.department_id = d.department_id;  -- Join condition
+
+-- Left join - all employees, even those without departments
+SELECT
+    e.first_name,
+    e.last_name,
+    COALESCE(d.department_name, 'Not Assigned') AS department  -- Handle NULL values (W3Schools: SQL IS NULL)
+FROM employees e
+LEFT JOIN departments d ON e.department_id = d.department_id;
+
+-- Complex join with multiple tables
+SELECT
+    e.first_name,
+    e.last_name,
+    d.department_name,
+    p.project_name,
+    ep.role,
+    ep.hours_allocated
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+JOIN employee_projects ep ON e.employee_id = ep.employee_id
+JOIN projects p ON ep.project_id = p.project_id;
+
+-- Aggregate functions - summarize data (W3Schools: SQL COUNT, SUM, AVG)
+SELECT
+    COUNT(*) AS total_employees,  -- Count all employees
+    AVG(salary) AS average_salary,  -- Average salary
+    MAX(salary) AS highest_salary,  -- Maximum salary
+    MIN(salary) AS lowest_salary,   -- Minimum salary
+    SUM(salary) AS total_salary     -- Sum of all salaries
+FROM employees;
+
+-- GROUP BY - group results by category (W3Schools: SQL GROUP BY)
+SELECT
+    d.department_name,
+    COUNT(e.employee_id) AS employee_count,
+    AVG(e.salary) AS avg_salary,
+    MAX(e.salary) AS max_salary
+FROM departments d
+LEFT JOIN employees e ON d.department_id = e.department_id
+GROUP BY d.department_id, d.department_name  -- Group by department
+ORDER BY avg_salary DESC;  -- Order by average salary descending
+
+-- HAVING clause - filter grouped results (W3Schools: SQL HAVING)
+SELECT
+    d.department_name,
+    COUNT(e.employee_id) AS employee_count,
+    AVG(e.salary) AS avg_salary
+FROM departments d
+LEFT JOIN employees e ON d.department_id = e.department_id
+GROUP BY d.department_id, d.department_name
+HAVING COUNT(e.employee_id) > 1  -- Only departments with more than 1 employee
+ORDER BY employee_count DESC;
+
+-- Subqueries - nested queries (W3Schools: SQL Subqueries)
+-- Find employees earning above department average
+SELECT
+    e.first_name,
+    e.last_name,
+    e.salary,
+    d.department_name
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+WHERE e.salary > (  -- Subquery for department average
+    SELECT AVG(salary)
+    FROM employees
+    WHERE department_id = e.department_id
+);
+
+-- Common Table Expressions (CTEs) - temporary named result sets (W3Schools: SQL CTE)
+WITH department_stats AS (  -- CTE definition
+    SELECT
+        department_id,
+        AVG(salary) AS avg_salary,
+        COUNT(*) AS employee_count
+    FROM employees
+    GROUP BY department_id
+)
+SELECT
+    d.department_name,
+    ds.avg_salary,
+    ds.employee_count,
+    CASE  -- Conditional logic (W3Schools: SQL CASE)
+        WHEN ds.employee_count > 2 THEN 'Large Department'
+        WHEN ds.employee_count > 1 THEN 'Medium Department'
+        ELSE 'Small Department'
+    END AS department_size
+FROM departments d
+JOIN department_stats ds ON d.department_id = ds.department_id;
+
+-- Indexes - improve query performance (W3Schools: SQL CREATE INDEX)
+CREATE INDEX idx_employee_salary ON employees(salary);  -- Index on salary
+CREATE INDEX idx_employee_dept ON employees(department_id);  -- Index on department
+CREATE INDEX idx_employee_email ON employees(email);  -- Index on email
+
+-- Views - virtual tables based on queries (W3Schools: SQL CREATE VIEW)
+CREATE VIEW employee_details AS  -- Create view
+SELECT
+    e.employee_id,
+    CONCAT(e.first_name, ' ', e.last_name) AS full_name,
+    e.email,
+    e.salary,
+    d.department_name,
+    e.hire_date
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id;
+
+-- Query the view
+SELECT * FROM employee_details WHERE salary > 65000;
+
+-- Stored procedures - reusable SQL code (W3Schools: SQL Stored Procedures)
+DELIMITER $$  -- Change delimiter for procedure definition
+CREATE PROCEDURE get_employee_projects(IN emp_id INT)  -- Procedure definition
+BEGIN  -- Procedure body start
+    SELECT
+        p.project_name,
+        ep.role,
+        ep.hours_allocated,
+        p.status
+    FROM projects p
+    JOIN employee_projects ep ON p.project_id = ep.project_id
+    WHERE ep.employee_id = emp_id;
+END $$  -- Procedure body end
+DELIMITER ;  -- Reset delimiter
+
+-- Call the stored procedure
+CALL get_employee_projects(1);  -- Get projects for employee ID 1
+
+-- Triggers - automatic actions on table changes (W3Schools: SQL Triggers)
+CREATE TRIGGER update_employee_timestamp  -- Trigger definition
+    BEFORE UPDATE ON employees  -- Trigger timing and table
+    FOR EACH ROW  -- For each affected row
+    SET NEW.updated_at = CURRENT_TIMESTAMP;  -- Set timestamp
+
+-- Transactions - ensure data consistency (W3Schools: SQL Transactions)
+START TRANSACTION;  -- Begin transaction
+    UPDATE employees SET salary = salary * 1.05 WHERE department_id = 1;  -- 5% raise for engineering
+    UPDATE departments SET budget = budget * 1.05 WHERE department_id = 1;  -- Update budget
+COMMIT;  -- Commit transaction
+
+-- Error handling with transactions
+START TRANSACTION;
+    -- Attempt to update
+    UPDATE employees SET salary = -1000 WHERE employee_id = 1;  -- This will fail due to CHECK constraint
+    -- If we reach here, commit
+    COMMIT;
+-- If error occurred, transaction automatically rolls back
+
+-- Backup and restore concepts (mentioned in comments)
+-- mysqldump company_db > company_backup.sql  -- Backup command
+-- mysql -u username -p company_db < company_backup.sql  -- Restore command
+
+-- Clean up - drop tables (use with caution!)
+-- DROP TABLE IF EXISTS employee_projects;
+-- DROP TABLE IF EXISTS projects;
+-- DROP TABLE IF EXISTS employees;
+-- DROP TABLE IF EXISTS departments;
+-- DROP DATABASE IF EXISTS company_db;`;
+  }
     return `# Python: Data Analysis with Pandas and NumPy
 # W3Schools Python Tutorial: https://www.w3schools.com/python/
 # This example demonstrates Python data manipulation using pandas and numpy libraries
@@ -2851,13 +3475,31 @@ function buildAssistantResponse(query, results) {
 
   // Check if this is primarily a code request
   const lowerQuery = cleanedQuery.toLowerCase();
-  const isCodeQuery = /(code|example|snippet|function|class|script|program|implement|write|create)/i.test(lowerQuery) ||
+  const isCodeSnippetQuery = isCodeSnippet(cleanedQuery);
+  const isCodeQuery = isCodeSnippetQuery ||
+                     /(code|example|snippet|function|class|script|program|implement|write|create)/i.test(lowerQuery) ||
                      /(react|node|python|javascript|express|api|component|backend)/i.test(lowerQuery) ||
                      lowerQuery.length < 20 && /(how|what|show|give)/i.test(lowerQuery);
 
-  const codeSnippet = generateLocalCode(cleanedQuery);
+  const localCodeSnippet = generateLocalCode(cleanedQuery);
+  const codeSnippet = isCodeSnippetQuery ? cleanedQuery : localCodeSnippet;
 
-  if (isCodeQuery && codeSnippet) {
+  if (isCodeSnippetQuery) {
+    return {
+      summary: `I detected code in your input and will explain it line by line.`,
+      intent: `Code explanation: dissecting the provided code snippet.`,
+      followUps: [
+        `Show me how each line works`,
+        `What does each variable do`,
+        `Describe this code with examples`
+      ],
+      answer: `Below is a detailed, line-by-line explanation of the code you pasted. Each part of the snippet is described with syntax, purpose, and recommended best practices.`,
+      answerType: 'code-explanation',
+      codeSnippet
+    };
+  }
+
+  if (isCodeQuery && localCodeSnippet) {
     return {
       summary: `Here's a code example for "${cleanedQuery}".`,
       intent: `Code generation: providing implementation example for "${cleanedQuery}".`,
@@ -2906,12 +3548,13 @@ app.post('/api/search', async (req, res) => {
   const filters = { category, tag };
   const results = performSearch(query, filters);
   let assistant = buildAssistantResponse(query, results);
+  const isCodeSnippetInput = isCodeSnippet(query);
 
   if (openai && query.trim()) {
     try {
-      const completion = await openai.responses.create({
-        model: 'gpt-4.1-mini',
-        input: `You are a professional AI search engine assistant specializing in programming languages and web development. Answer the user query directly and concisely. If the query asks for code, examples, or implementation in any programming language (Python, Java, Dart, React JS, Node JS, HTML, CSS, JavaScript), provide a complete, working code snippet with extremely detailed line-by-line comments explaining each part of the code. Include explanations for:
+      const prompt = isCodeSnippetInput
+        ? `You are a professional programming assistant. The user's input is a code snippet that must be explained line by line. Do not generate new code. Explain every single line of the provided code, with syntax, behavior, purpose, and any relevant best practices from W3Schools or similar resources. If the code uses HTML, CSS, JavaScript, Python, Java, Dart, React, Node.js, or backend concepts, reference the correct tutorial links. Provide a clean explanation that maps directly to the pasted code.\n\nCode to explain:\n${query}`
+        : `You are a professional AI search engine assistant specializing in programming languages and web development. Answer the user query directly and concisely. If the query asks for code, examples, or implementation in any programming language (Python, Java, Dart, React JS, Node JS, HTML, CSS, JavaScript), provide a complete, working code snippet with extremely detailed line-by-line comments explaining each part of the code. Include explanations for:
 
 - Variable declarations and their purposes
 - Function definitions and parameters
@@ -2937,7 +3580,11 @@ Programming Language References:
 - CSS: https://www.w3schools.com/css/
 - JavaScript: https://www.w3schools.com/js/
 
-If it's a general question, give a brief answer. Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.`
+If it's a general question, give a brief answer. Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.`;
+
+      const completion = await openai.responses.create({
+        model: 'gpt-4.1-mini',
+        input: prompt
       });
 
       const rawText = completion.output[0]?.content[0]?.text;
@@ -2945,9 +3592,9 @@ If it's a general question, give a brief answer. Query: "${query}". Context: ${r
         const extracted = extractCodeFromResponse(rawText);
         assistant = {
           ...assistant,
-          answer: extracted.answer || assistant.answer,
-          codeSnippet: extracted.codeSnippet || assistant.codeSnippet,
-          answerType: extracted.codeSnippet ? 'code' : 'text'
+          answer: extracted.answer || rawText || assistant.answer,
+          codeSnippet: isCodeSnippetInput ? query : extracted.codeSnippet || assistant.codeSnippet,
+          answerType: isCodeSnippetInput ? 'code-explanation' : extracted.codeSnippet ? 'code' : 'text'
         };
       }
     } catch (error) {

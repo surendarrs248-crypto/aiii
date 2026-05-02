@@ -109,7 +109,7 @@ export default function App() {
     <div className="app-shell">
       <header className="hero-panel">
         <div>
-          <span className="eyebrow">BLACK BOX AI</span>
+          <span className="eyebrow">black ai</span>
           <h1>Conversational AI search with professional knowledge ranking.</h1>
           <p>
             Discover relevant insights like a modern AI assistant — with intent-aware results, source
@@ -122,7 +122,7 @@ export default function App() {
             <input
               id="searchInput"
               type="search"
-              placeholder="Search for answers, code examples in Python, Java, Dart, React, Node.js, HTML, CSS, JavaScript..."
+              placeholder="Search for answers or paste code to explain each line..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -237,7 +237,16 @@ export default function App() {
             <p className="detail-summary">{assistant.summary}</p>
             <div className="assistant-intent detail-intent">{assistant.intent}</div>
             <div className="assistant-answer detail-answer">
-              <p>{assistant.answer}</p>
+              {assistant.answerType === 'code-explanation' ? (
+                <>
+                  <h3>Pasted code</h3>
+                  <pre className="code-block">{assistant.codeSnippet}</pre>
+                  <h3>Line-by-line explanation</h3>
+                  <div className="explanation-text">{assistant.answer}</div>
+                </>
+              ) : (
+                <p>{assistant.answer}</p>
+              )}
               {assistant.answerType === 'code' && assistant.codeSnippet && (
                 <div className="line-by-line-panel">
                   <h3>Line-by-line code view</h3>
