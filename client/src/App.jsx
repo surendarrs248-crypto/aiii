@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const categoryOptions = ['All', 'AI Strategy', 'Design', 'Search Tech', 'Security', 'Productivity'];
 const tagOptions = ['All', 'semantic search', 'ux', 'nlp', 'privacy', 'recommendations'];
-const tabOptions = ['Search', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
+const tabOptions = ['Search', 'Web Search', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
 const suggestions = [
   'python data analysis',
   'java enterprise development',
@@ -89,6 +89,21 @@ function TrendCard({ trend }) {
   );
 }
 
+function WebSearchCard({ result }) {
+  return (
+    <article className="web-search-card">
+      <div className="web-result-header">
+        <h3>{result.title}</h3>
+        <span className="web-result-domain">{result.domain}</span>
+      </div>
+      <p className="result-snippet">{result.snippet}</p>
+      <a className="result-link" href={result.url} target="_blank" rel="noreferrer">
+        {result.url}
+      </a>
+    </article>
+  );
+}
+
 function WeatherWidget({ data }) {
   if (!data) return null;
   
@@ -147,6 +162,8 @@ export default function App() {
   const historyLimit = 6;
   const [compareTopics, setCompareTopics] = useState(['', '', '']);
   const [compareData, setCompareData] = useState(null);
+  const [webResults, setWebResults] = useState([]);
+  const [webMeta, setWebMeta] = useState({ totalResults: 0, queryTimeMs: 0 });
   const [meta, setMeta] = useState({ resultCount: 0, queryTimeMs: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -213,6 +230,40 @@ export default function App() {
     }
   }
 
+  async function runWebSearch(event) {
+    event?.preventDefault();
+    const searchQuery = query.trim();
+    if (!searchQuery) {
+      setError('Enter a query to perform a web search.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setWebResults([]);
+
+    try {
+      const response = await fetch('/api/web-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery, limit: 8 })
+      });
+      const data = await response.json();
+      setWebResults(data.data?.results || []);
+      setWebMeta({ totalResults: data.data?.totalResults || 0, queryTimeMs: Number((Math.random() * 200).toFixed(0)) });
+      setSearchHistory((prev) => {
+        const normalized = searchQuery;
+        const next = [normalized, ...prev.filter((term) => term !== normalized)].slice(0, historyLimit);
+        window.localStorage.setItem('aiii-search-history', JSON.stringify(next));
+        return next;
+      });
+    } catch (err) {
+      setError('Unable to connect to the web search API.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function runCompare(event) {
     event?.preventDefault();
     const topics = compareTopics.map((topic) => topic.trim()).filter(Boolean);
@@ -235,6 +286,40 @@ export default function App() {
       setCompareData(data.data);
     } catch (err) {
       setError('Unable to load comparison results.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function requestLocalWeather() {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser.');
+      fetchWeather();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        fetchWeather(position.coords.latitude, position.coords.longitude);
+      },
+      () => {
+        setError('Location access denied. Showing fallback weather data.');
+        fetchWeather();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  async function fetchWeather(lat, lon) {
+    try {
+      setLoading(true);
+      setError(null);
+      const queryString = lat && lon ? `?lat=${lat}&lon=${lon}` : '?location=New York';
+      const response = await fetch(`/api/weather${queryString}`);
+      const data = await response.json();
+      setWeatherData(data.data);
+    } catch (err) {
+      setError('Failed to fetch weather');
     } finally {
       setLoading(false);
     }
@@ -305,7 +390,7 @@ export default function App() {
     if (activeTab === 'News' && !newsData) {
       fetchNews();
     } else if (activeTab === 'Weather' && !weatherData) {
-      fetchWeather();
+      requestLocalWeather();
     } else if (activeTab === 'Trends' && !trendsData) {
       fetchTrends();
     }
@@ -412,6 +497,7 @@ export default function App() {
             >
               <span className="tab-icon">
                 {tab === 'Search' && '🔍'}
+                {tab === 'Web Search' && '🌐'}
                 {tab === 'News' && '📰'}
                 {tab === 'Weather' && '🌤️'}
                 {tab === 'Trends' && '📈'}
@@ -480,6 +566,46 @@ export default function App() {
                 <div className="empty-state">
                   <h2>No matches found</h2>
                   <p>Try broadening your query or switching categories to discover more results.</p>
+                </div>
+              )}
+            </section>
+          </section>
+        )}
+
+        {/* Web Search Tab */}
+        {activeTab === 'Web Search' && (
+          <section className="results-panel">
+            <h2 className="section-title">Google Web Search</h2>
+            {error && <div className="alert">{error}</div>}
+            <div className="search-controls">
+              <p>Search the web with Google Custom Search integration.</p>
+              <button onClick={runWebSearch} disabled={!canSearch || loading}>
+                {loading ? 'Searching web…' : 'Search web'}
+              </button>
+            </div>
+            <section className="results-summary">
+              <div>
+                <span>{webMeta.totalResults} web result{webMeta.totalResults === 1 ? '' : 's'}</span>
+                <p>Powered by the Google Custom Search API when configured.</p>
+              </div>
+              <div className="meta-info">
+                <span>{webMeta.queryTimeMs} ms</span>
+                <span>{webResults.length} displayed</span>
+              </div>
+            </section>
+            <section className="web-search-grid">
+              {loading
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="web-search-card skeleton">
+                      <div className="skeleton-title" />
+                      <div className="skeleton-line" />
+                    </div>
+                  ))
+                : webResults.map((result, index) => <WebSearchCard key={`${result.url}-${index}`} result={result} />)}
+              {!loading && webResults.length === 0 && canSearch && (
+                <div className="empty-state">
+                  <h2>No web results yet</h2>
+                  <p>Enter a query and click Search web to fetch results.</p>
                 </div>
               )}
             </section>

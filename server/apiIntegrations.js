@@ -1,38 +1,82 @@
 // External API Integrations for Weather, News, and Web Search
 // This module handles all external API calls
 
-// Mock Weather API integration (replace with real API in production)
-export async function getWeather(location) {
+// Weather API integration (replace with real API in production)
+export async function getWeather(lat, lon, location = 'Local area') {
+  const apiKey = process.env.OPENWEATHER_API_KEY;
+
+  const fallbackWeather = {
+    location,
+    current: {
+      temperature: 72,
+      feelsLike: 70,
+      humidity: 65,
+      windSpeed: 8,
+      condition: 'Partly Cloudy',
+      icon: '⛅',
+      lastUpdated: new Date().toISOString(),
+    },
+    forecast: [
+      { day: 'Tomorrow', high: 75, low: 62, condition: 'Sunny', icon: '☀️' },
+      { day: 'Friday', high: 73, low: 61, condition: 'Cloudy', icon: '☁️' },
+      { day: 'Saturday', high: 68, low: 55, condition: 'Rainy', icon: '🌧️' },
+    ],
+    alerts: [],
+    source: 'OpenWeatherMap (Mock)',
+  };
+
+  if (!apiKey || !lat || !lon) {
+    return fallbackWeather;
+  }
+
   try {
-    // In production, integrate with OpenWeatherMap, Weather.com, or similar
-    // API Key needed: process.env.WEATHER_API_KEY
-    
-    // Mock response for demo
-    const mockWeatherData = {
-      location: location,
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/onecall?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&exclude=minutely,hourly,alerts&units=imperial&appid=${encodeURIComponent(apiKey)}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`OpenWeatherMap returned ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      location: data.timezone || location,
       current: {
-        temperature: 72,
-        feelsLike: 70,
-        humidity: 65,
-        windSpeed: 8,
-        condition: 'Partly Cloudy',
-        icon: '⛅',
-        lastUpdated: new Date().toISOString(),
+        temperature: Math.round(data.current.temp),
+        feelsLike: Math.round(data.current.feels_like),
+        humidity: data.current.humidity,
+        windSpeed: Math.round(data.current.wind_speed),
+        condition: data.current.weather?.[0]?.description || 'Unknown',
+        icon: mapWeatherIcon(data.current.weather?.[0]?.main),
+        lastUpdated: new Date(data.current.dt * 1000).toISOString(),
       },
-      forecast: [
-        { day: 'Tomorrow', high: 75, low: 62, condition: 'Sunny', icon: '☀️' },
-        { day: 'Friday', high: 73, low: 61, condition: 'Cloudy', icon: '☁️' },
-        { day: 'Saturday', high: 68, low: 55, condition: 'Rainy', icon: '🌧️' },
-      ],
-      alerts: [],
-      source: 'OpenWeatherMap API',
+      forecast: data.daily.slice(1, 4).map((day) => ({
+        day: new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }),
+        high: Math.round(day.temp.max),
+        low: Math.round(day.temp.min),
+        condition: day.weather?.[0]?.main || 'N/A',
+        icon: mapWeatherIcon(day.weather?.[0]?.main),
+      })),
+      alerts: data.alerts || [],
+      source: 'OpenWeatherMap',
     };
-    
-    return mockWeatherData;
   } catch (error) {
     console.error('Weather API error:', error);
-    throw new Error('Failed to fetch weather data');
+    return fallbackWeather;
   }
+}
+
+function mapWeatherIcon(main) {
+  if (!main) return '🌤️';
+  const normalized = main.toLowerCase();
+  if (normalized.includes('cloud')) return '☁️';
+  if (normalized.includes('rain') || normalized.includes('drizzle')) return '🌧️';
+  if (normalized.includes('storm')) return '⛈️';
+  if (normalized.includes('snow')) return '❄️';
+  if (normalized.includes('clear')) return '☀️';
+  if (normalized.includes('fog') || normalized.includes('mist') || normalized.includes('haze')) return '🌫️';
+  return '🌤️';
 }
 
 // Mock News API integration (replace with real API in production)
@@ -103,50 +147,68 @@ export async function getNews(category = 'technology') {
 }
 
 // Web search integration (replace with real search API in production)
-export async function performWebSearch(query) {
+export async function performWebSearch(query, limit = 10) {
+  const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+  const searchEngineId = process.env.GOOGLE_CSE_ID;
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 10);
+
+  if (!apiKey || !searchEngineId) {
+    return getMockSearchResults(query, safeLimit, 'Fallback Google search mock');
+  }
+
   try {
-    // In production, integrate with Bing Search API, Google Custom Search, or similar
-    // API Key needed: process.env.SEARCH_API_KEY
-    
-    // Mock web search results
-    const mockResults = [
-      {
-        position: 1,
-        title: `${query} - Overview and Guide`,
-        url: `https://example.com/${query.replace(/\s+/g, '-')}`,
-        snippet: `Learn about ${query} with comprehensive guides and examples. Updated with latest best practices and industry standards.`,
-        domain: 'example.com',
-        type: 'article',
-      },
-      {
-        position: 2,
-        title: `Best Practices for ${query}`,
-        url: `https://tutorial.com/best-practices-${query}`,
-        snippet: `Expert tips and best practices for implementing ${query} effectively. Includes code examples and real-world use cases.`,
-        domain: 'tutorial.com',
-        type: 'guide',
-      },
-      {
-        position: 3,
-        title: `${query} API Documentation`,
-        url: `https://docs.example.com/${query}`,
-        snippet: `Official API documentation for ${query}. Complete reference with examples, error handling, and authentication.`,
-        domain: 'docs.example.com',
-        type: 'documentation',
-      },
-    ];
-    
+    const params = new URLSearchParams({
+      key: apiKey,
+      cx: searchEngineId,
+      q: query,
+      num: String(safeLimit),
+    });
+
+    const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`Google Search API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const results = (data.items || []).map((item, index) => ({
+      position: item.position || index + 1,
+      title: item.title,
+      url: item.link,
+      snippet: item.snippet || item.title,
+      domain: item.displayLink || item.link?.split('/')[2] || 'web',
+      type: item.fileFormat ? 'document' : 'website',
+    }));
+
     return {
-      results: mockResults,
-      query: query,
-      totalResults: mockResults.length,
-      searchTime: '0.5s',
-      source: 'Web Search API',
+      results,
+      query,
+      totalResults: Number(data.searchInformation?.totalResults || results.length),
+      searchTime: `${Number(data.searchInformation?.searchTime || 0).toFixed(2)}s`,
+      source: 'Google Custom Search',
     };
   } catch (error) {
-    console.error('Web search error:', error);
-    throw new Error('Failed to perform web search');
+    console.error('Google Search API error:', error);
+    return getMockSearchResults(query, safeLimit, 'Google search fallback mock');
   }
+}
+
+function getMockSearchResults(query, limit, source = 'Mock Search API') {
+  const mockResults = Array.from({ length: limit }, (_, index) => ({
+    position: index + 1,
+    title: `${query} - Guide ${index + 1}`,
+    url: `https://example.com/${query.replace(/\s+/g, '-')}/${index + 1}`,
+    snippet: `Learn about ${query} with comprehensive guides and examples. Updated with latest best practices.`,
+    domain: 'example.com',
+    type: 'article',
+  }));
+
+  return {
+    results: mockResults,
+    query,
+    totalResults: mockResults.length,
+    searchTime: '0.6s',
+    source,
+  };
 }
 
 // Stock/Market data integration

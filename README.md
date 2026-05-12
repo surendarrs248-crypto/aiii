@@ -41,3 +41,15 @@ OPENAI_API_KEY=your_api_key_here
 ```
 
 Then start the server normally.
+
+## Optional Google Search and Local Weather Integration
+
+To enable Google Custom Search and GPS-based weather, add these environment variables:
+
+```bash
+OPENWEATHER_API_KEY=your_openweathermap_api_key
+GOOGLE_SEARCH_API_KEY=your_google_custom_search_api_key
+GOOGLE_CSE_ID=your_google_custom_search_engine_id
+```
+
+When provided, the app will use Google Custom Search for web results and local geolocation to retrieve weather data.

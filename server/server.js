@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import { searchData } from './searchData.js';
+import { getWeather, performWebSearch } from './apiIntegrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3621,31 +3622,16 @@ app.get('/api/health', (req, res) => {
 });
 
 // New: Weather API endpoint
-app.get('/api/weather', (req, res) => {
-  const { location = 'New York' } = req.query;
-  
-  // Mock weather data (integrate with real API in production)
-  const weatherData = {
-    location: location,
-    current: {
-      temperature: 72,
-      feelsLike: 70,
-      humidity: 65,
-      windSpeed: 8,
-      condition: 'Partly Cloudy',
-      icon: '⛅',
-      lastUpdated: new Date().toISOString(),
-    },
-    forecast: [
-      { day: 'Tomorrow', high: 75, low: 62, condition: 'Sunny', icon: '☀️' },
-      { day: 'Friday', high: 73, low: 61, condition: 'Cloudy', icon: '☁️' },
-      { day: 'Saturday', high: 68, low: 55, condition: 'Rainy', icon: '🌧️' },
-    ],
-    alerts: [],
-    source: 'OpenWeatherMap (Mock)',
-  };
-  
-  res.json({ success: true, data: weatherData });
+app.get('/api/weather', async (req, res) => {
+  const { lat, lon, location = 'Local area' } = req.query;
+
+  try {
+    const weatherData = await getWeather(lat, lon, location);
+    res.json({ success: true, data: weatherData });
+  } catch (error) {
+    console.error('Weather fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch weather data' });
+  }
 });
 
 // New: News/Articles API endpoint
@@ -3718,50 +3704,20 @@ app.get('/api/news', (req, res) => {
 });
 
 // New: Web Search API endpoint
-app.post('/api/web-search', (req, res) => {
+app.post('/api/web-search', async (req, res) => {
   const { query = '', limit = 10 } = req.body;
-  
+
   if (!query.trim()) {
     return res.status(400).json({ success: false, message: 'Query is required' });
   }
-  
-  // Mock web search results
-  const searchResults = [
-    {
-      position: 1,
-      title: `${query} - Overview and Guide`,
-      url: `https://example.com/${query.replace(/\s+/g, '-')}`,
-      snippet: `Learn about ${query} with comprehensive guides and examples. Updated with latest best practices.`,
-      domain: 'example.com',
-      type: 'article',
-    },
-    {
-      position: 2,
-      title: `Best Practices for ${query}`,
-      url: `https://tutorial.com/best-practices-${query}`,
-      snippet: `Expert tips for implementing ${query} effectively. Includes code examples and real-world use cases.`,
-      domain: 'tutorial.com',
-      type: 'guide',
-    },
-    {
-      position: 3,
-      title: `${query} API Documentation`,
-      url: `https://docs.example.com/${query}`,
-      snippet: `Official API documentation for ${query}. Complete reference with examples and error handling.`,
-      domain: 'docs.example.com',
-      type: 'documentation',
-    },
-  ];
-  
-  res.json({
-    success: true,
-    data: {
-      results: searchResults.slice(0, parseInt(limit)),
-      query: query,
-      totalResults: searchResults.length,
-      searchTime: Math.random().toFixed(2) + 's',
-    }
-  });
+
+  try {
+    const data = await performWebSearch(query, limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Web search failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch web search results' });
+  }
 });
 
 // New: Trending Topics API endpoint
