@@ -143,9 +143,24 @@ export default function App() {
     answerType: 'text',
     codeSnippet: ''
   });
+  const [searchHistory, setSearchHistory] = useState([]);
+  const historyLimit = 6;
+  const [compareTopics, setCompareTopics] = useState(['', '', '']);
+  const [compareData, setCompareData] = useState(null);
   const [meta, setMeta] = useState({ resultCount: 0, queryTimeMs: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem('aiii-search-history');
+    if (stored) {
+      try {
+        setSearchHistory(JSON.parse(stored));
+      } catch (e) {
+        window.localStorage.removeItem('aiii-search-history');
+      }
+    }
+  }, []);
 
   const canSearch = query.trim().length > 0;
 
@@ -185,8 +200,41 @@ export default function App() {
       setResults(data.results || []);
       setAssistant(data.assistant || assistant);
       setMeta(data.meta || { resultCount: 0, queryTimeMs: 0 });
+      setSearchHistory((prev) => {
+        const normalized = searchQuery.trim();
+        const next = [normalized, ...prev.filter((term) => term !== normalized)].slice(0, historyLimit);
+        window.localStorage.setItem('aiii-search-history', JSON.stringify(next));
+        return next;
+      });
     } catch (err) {
       setError('Unable to connect to the search API.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runCompare(event) {
+    event?.preventDefault();
+    const topics = compareTopics.map((topic) => topic.trim()).filter(Boolean);
+    if (topics.length === 0) {
+      setError('Enter at least one topic to compare.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setCompareData(null);
+
+    try {
+      const response = await fetch('/api/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topics })
+      });
+      const data = await response.json();
+      setCompareData(data.data);
+    } catch (err) {
+      setError('Unable to load comparison results.');
     } finally {
       setLoading(false);
     }
@@ -300,6 +348,31 @@ export default function App() {
               </button>
             ))}
           </div>
+          {searchHistory.length > 0 && (
+            <div className="search-history">
+              <div className="history-header">
+                <span>Recent searches</span>
+                <button type="button" className="history-clear" onClick={() => {
+                  setSearchHistory([]);
+                  window.localStorage.removeItem('aiii-search-history');
+                }}>
+                  Clear
+                </button>
+              </div>
+              <div className="history-list">
+                {searchHistory.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    className="history-pill"
+                    onClick={() => runSearch(null, term)}
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
           <div className="hero-panel__visual">
           <div className="hero-box">
@@ -495,13 +568,71 @@ export default function App() {
 
         {/* Compare Tab */}
         {activeTab === 'Compare' && (
-          <section className="results-panel">
-            <h2 className="section-title">Compare Results</h2>
-            <p className="section-subtitle">Compare different approaches, tools, or solutions for your query</p>
+          <section className="results-panel compare-panel">
+            <h2 className="section-title">Compare Options</h2>
+            <p className="section-subtitle">Enter up to three topics to compare features, pros, cons, and recommendations.</p>
             {error && <div className="alert">{error}</div>}
-            <div className="compare-content">
-              <p>Search for something first, then use the comparison tools to see pros & cons of different approaches.</p>
-            </div>
+            <form className="compare-form" onSubmit={runCompare}>
+              <div className="compare-inputs">
+                {compareTopics.map((topic, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    placeholder={`Topic ${index + 1}`}
+                    value={topic}
+                    onChange={(event) => {
+                      const nextTopics = [...compareTopics];
+                      nextTopics[index] = event.target.value;
+                      setCompareTopics(nextTopics);
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="compare-actions">
+                <button type="submit" disabled={loading}>
+                  {loading ? 'Comparing…' : 'Compare now'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setCompareTopics(['', '', ''])}
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+            {compareData ? (
+              <div className="comparison-grid">
+                {compareData.comparisons.map((item) => (
+                  <article key={item.name} className="comparison-card">
+                    <h3>{item.name}</h3>
+                    <div className="topic-tag">Rating: {item.rating}</div>
+                    <div className="topic-tag">Price: {item.price}</div>
+                    <div className="topic-tag">Market share: {item.market}%</div>
+                    <div className="comparison-section">
+                      <strong>Pros</strong>
+                      <ul>
+                        {item.pros.map((pro) => (
+                          <li key={pro}>{pro}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="comparison-section">
+                      <strong>Cons</strong>
+                      <ul>
+                        {item.cons.map((con) => (
+                          <li key={con}>{con}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="compare-content">
+                <p>Use the compare inputs above to explore how different options stack up in real time.</p>
+              </div>
+            )}
           </section>
         )}
 
