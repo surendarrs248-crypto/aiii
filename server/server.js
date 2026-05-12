@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import { searchData } from './searchData.js';
-import { getWeather, performWebSearch } from './apiIntegrations.js';
+import { getWeather, performWebSearch, getWikipediaSummary } from './apiIntegrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3553,62 +3553,52 @@ app.post('/api/search', async (req, res) => {
   const isCodeSnippetInput = isCodeSnippet(query);
 
   let webSearchData = { results: [], totalResults: 0, searchTime: '0.00s', source: 'Google Custom Search' };
+  let wikiSummary = null;
+
   if (query.trim()) {
     try {
       webSearchData = await performWebSearch(query, 6);
     } catch (error) {
       console.error('Web search failed:', error.message);
     }
+
+    try {
+      wikiSummary = await getWikipediaSummary(query);
+    } catch (error) {
+      console.error('Wikipedia lookup failed:', error.message);
+    }
   }
 
-  if (!openai && results.length === 0 && webSearchData.results.length > 0) {
+  if (!openai && results.length === 0 && (wikiSummary?.extract || webSearchData.results.length > 0)) {
     assistant = {
       title: 'AI web search assistant',
-      summary: `Found ${webSearchData.results.length} web results for "${query}".`,
+      summary: wikiSummary?.extract
+        ? `Sourced from Wikipedia for "${query}".`
+        : `Found ${webSearchData.results.length} web results for "${query}".`,
       intent: `Retrieve information from Google search for "${query}".`,
       followUps: [
         `Search for ${query} best practices`,
         `Show me examples using ${query}`,
         `Compare ${query} implementations`
       ],
-      answer: `Top web result: "${webSearchData.results[0].title}" — ${webSearchData.results[0].snippet}`,
+      answer: wikiSummary?.extract || webSearchData.results[0].snippet || `No direct answer found for "${query}".`,
       answerType: 'text',
-      codeSnippet: ''
+      codeSnippet: '',
+      source: wikiSummary?.source || webSearchData.source || 'Web search'
     };
   }
 
   if (openai && query.trim()) {
     try {
+      const webContext = webSearchData.results.length
+        ? `Web search context:\n${webSearchData.results.slice(0, 3).map((item, idx) => `${idx + 1}. ${item.title}: ${item.snippet} (${item.url})`).join('\n')}`
+        : '';
+      const wikiContext = wikiSummary?.extract
+        ? `Wikipedia summary:\n${wikiSummary.extract}\nSource: ${wikiSummary.url}`
+        : '';
       const prompt = isCodeSnippetInput
         ? `You are a professional programming assistant. The user's input is a code snippet that must be explained line by line. Do not generate new code. Explain every single line of the provided code, with syntax, behavior, purpose, and any relevant best practices from W3Schools or similar resources. If the code uses HTML, CSS, JavaScript, Python, Java, Dart, React, Node.js, or backend concepts, reference the correct tutorial links. Provide a clean explanation that maps directly to the pasted code.\n\nCode to explain:\n${query}`
-        : `You are a professional AI search engine assistant specializing in programming languages and web development. Answer the user query directly and concisely. If the query asks for code, examples, or implementation in any programming language (Python, Java, Dart, React JS, Node JS, HTML, CSS, JavaScript), provide a complete, working code snippet with extremely detailed line-by-line comments explaining each part of the code. Include explanations for:
-
-- Variable declarations and their purposes
-- Function definitions and parameters
-- Control structures (loops, conditionals)
-- Class definitions and methods
-- API calls and data handling
-- DOM manipulation and event handling
-- Framework-specific concepts
-- Best practices from W3Schools tutorials
-- Syntax rules and conventions
-- Error handling and edge cases
-- Performance considerations
-
-For each programming language, reference W3Schools best practices and include links to relevant W3Schools tutorials. Explain every single line of code in detail, including why certain approaches are used and what alternatives exist.
-
-Programming Language References:
-- Python: https://www.w3schools.com/python/
-- Java: https://www.w3schools.com/java/
-- Dart: https://www.w3schools.com/dart/
-- React JS: https://www.w3schools.com/react/
-- Node.js: https://www.w3schools.com/nodejs/
-- HTML: https://www.w3schools.com/html/
-- CSS: https://www.w3schools.com/css/
-- JavaScript: https://www.w3schools.com/js/
-
-If it's a general question, give a brief answer. Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.`;
-
+        : `You are a professional AI search engine assistant specializing in programming languages and web development. Answer the user query directly and concisely. If the query asks for code, examples, or implementation in any programming language (Python, Java, Dart, React JS, Node JS, HTML, CSS, JavaScript), provide a complete, working code snippet with extremely detailed line-by-line comments explaining each part of the code. Include explanations for:\n\n- Variable declarations and their purposes\n- Function definitions and parameters\n- Control structures (loops, conditionals)\n- Class definitions and methods\n- API calls and data handling\n- DOM manipulation and event handling\n- Framework-specific concepts\n- Best practices from W3Schools tutorials\n- Syntax rules and conventions\n- Error handling and edge cases\n- Performance considerations\n\nFor each programming language, reference W3Schools best practices and include links to relevant W3Schools tutorials. Explain every single line of code in detail, including why certain approaches are used and what alternatives exist.\n\nProgramming Language References:\n- Python: https://www.w3schools.com/python/\n- Java: https://www.w3schools.com/java/\n- Dart: https://www.w3schools.com/dart/\n- React JS: https://www.w3schools.com/react/\n- Node.js: https://www.w3schools.com/nodejs/\n- HTML: https://www.w3schools.com/html/\n- CSS: https://www.w3schools.com/css/\n- JavaScript: https://www.w3schools.com/js/\n\nIf it's a general question, give a brief answer. Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.\n\n${webContext}\n\n${wikiContext}`;
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
@@ -3622,7 +3612,8 @@ If it's a general question, give a brief answer. Query: "${query}". Context: ${r
           ...assistant,
           answer: extracted.answer || rawText || assistant.answer,
           codeSnippet: isCodeSnippetInput ? query : extracted.codeSnippet || assistant.codeSnippet,
-          answerType: isCodeSnippetInput ? 'code-explanation' : extracted.codeSnippet ? 'code' : 'text'
+          answerType: isCodeSnippetInput ? 'code-explanation' : extracted.codeSnippet ? 'code' : 'text',
+          source: wikiSummary?.source || webSearchData.source || assistant.source || 'Web search'
         };
       }
     } catch (error) {

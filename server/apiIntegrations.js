@@ -192,6 +192,52 @@ export async function performWebSearch(query, limit = 10) {
   }
 }
 
+export async function getWikipediaSummary(query) {
+  if (!query || typeof query !== 'string') {
+    return null;
+  }
+
+  try {
+    const searchParams = new URLSearchParams({
+      action: 'query',
+      list: 'search',
+      srsearch: query,
+      format: 'json',
+      origin: '*',
+      srlimit: '1',
+      srprop: ''
+    });
+    const searchResponse = await fetch(`https://en.wikipedia.org/w/api.php?${searchParams.toString()}`);
+    if (!searchResponse.ok) {
+      throw new Error(`Wikipedia search returned ${searchResponse.status}`);
+    }
+
+    const searchData = await searchResponse.json();
+    const page = searchData.query?.search?.[0];
+    if (!page?.title) {
+      return null;
+    }
+
+    const title = page.title;
+    const summaryResponse = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+    if (!summaryResponse.ok) {
+      throw new Error(`Wikipedia summary returned ${summaryResponse.status}`);
+    }
+
+    const summaryData = await summaryResponse.json();
+    return {
+      title: summaryData.title,
+      extract: summaryData.extract || '',
+      url: summaryData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+      thumbnail: summaryData.thumbnail?.source || null,
+      source: 'Wikipedia'
+    };
+  } catch (error) {
+    console.error('Wikipedia lookup error:', error);
+    return null;
+  }
+}
+
 function getMockSearchResults(query, limit, source = 'Mock Search API') {
   const mockResults = Array.from({ length: limit }, (_, index) => ({
     position: index + 1,

@@ -319,6 +319,18 @@ body {
   padding-left: 1rem;
 }
 
+.assistant-source {
+  margin-top: 0.75rem;
+  color: #7dd3fc;
+  font-size: 0.92rem;
+}
+
+.detail-source {
+  margin-top: 0.5rem;
+  color: #7dd3fc;
+  font-size: 0.92rem;
+}
+
 .assistant-answer {
   margin-top: 1rem;
   padding: 1.2rem;

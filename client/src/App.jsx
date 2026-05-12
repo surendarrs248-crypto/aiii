@@ -156,7 +156,8 @@ export default function App() {
     followUps: ['Search for Python data analysis', 'Ask for a React component', 'Show me HTML structure'],
     answer: 'This engine returns direct answers, recommendations, or code with line-by-line explanations.',
     answerType: 'text',
-    codeSnippet: ''
+    codeSnippet: '',
+    source: 'AI knowledge base'
   });
   const [searchHistory, setSearchHistory] = useState([]);
   const historyLimit = 6;
@@ -465,6 +466,7 @@ export default function App() {
           <div className="hero-box">
             <span>{assistant.title}</span>
             <p>{assistant.summary}</p>
+            {assistant.source && <div className="assistant-source">Source: {assistant.source}</div>}
             <div className="assistant-intent">{assistant.intent}</div>
             <div className="assistant-answer">
               <p>{assistant.answer}</p>
@@ -779,6 +781,7 @@ export default function App() {
             <h2>{assistant.title}</h2>
             <p className="detail-summary">{assistant.summary}</p>
             <div className="assistant-intent detail-intent">{assistant.intent}</div>
+            {assistant.source && <div className="assistant-source detail-source">Source: {assistant.source}</div>}
             <div className="assistant-answer detail-answer">
               {assistant.answerType === 'code-explanation' ? (
                 <>
