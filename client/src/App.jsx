@@ -215,8 +215,10 @@ export default function App() {
       const data = await response.json();
       setQuery(searchQuery);
       setResults(data.results || []);
+      setWebResults(data.webResults || []);
       setAssistant(data.assistant || assistant);
       setMeta(data.meta || { resultCount: 0, queryTimeMs: 0 });
+      setWebMeta(data.webMeta || { totalResults: 0, queryTimeMs: 0 });
       setSearchHistory((prev) => {
         const normalized = searchQuery.trim();
         const next = [normalized, ...prev.filter((term) => term !== normalized)].slice(0, historyLimit);
@@ -609,6 +611,16 @@ export default function App() {
                 </div>
               )}
             </section>
+            {webResults.length > 0 && (
+              <section className="web-results-panel">
+                <h2 className="section-title">Google Results</h2>
+                <section className="web-search-grid">
+                  {webResults.map((result, index) => (
+                    <WebSearchCard key={`${result.url}-${index}`} result={result} />
+                  ))}
+                </section>
+              </section>
+            )}
           </section>
         )}
 

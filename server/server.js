@@ -3552,6 +3552,31 @@ app.post('/api/search', async (req, res) => {
   let assistant = buildAssistantResponse(query, results);
   const isCodeSnippetInput = isCodeSnippet(query);
 
+  let webSearchData = { results: [], totalResults: 0, searchTime: '0.00s', source: 'Google Custom Search' };
+  if (query.trim()) {
+    try {
+      webSearchData = await performWebSearch(query, 6);
+    } catch (error) {
+      console.error('Web search failed:', error.message);
+    }
+  }
+
+  if (!openai && results.length === 0 && webSearchData.results.length > 0) {
+    assistant = {
+      title: 'AI web search assistant',
+      summary: `Found ${webSearchData.results.length} web results for "${query}".`,
+      intent: `Retrieve information from Google search for "${query}".`,
+      followUps: [
+        `Search for ${query} best practices`,
+        `Show me examples using ${query}`,
+        `Compare ${query} implementations`
+      ],
+      answer: `Top web result: "${webSearchData.results[0].title}" — ${webSearchData.results[0].snippet}`,
+      answerType: 'text',
+      codeSnippet: ''
+    };
+  }
+
   if (openai && query.trim()) {
     try {
       const prompt = isCodeSnippetInput
@@ -3609,6 +3634,11 @@ If it's a general question, give a brief answer. Query: "${query}". Context: ${r
     query,
     filters,
     results,
+    webResults: webSearchData.results,
+    webMeta: {
+      totalResults: webSearchData.totalResults,
+      queryTimeMs: Math.round((parseFloat(webSearchData.searchTime) || 0) * 1000)
+    },
     assistant,
     meta: {
       resultCount: results.length,
