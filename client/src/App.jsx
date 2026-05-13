@@ -111,6 +111,11 @@ function TrendCard({ trend }) {
 function WebSearchCard({ result }) {
   return (
     <article className="web-search-card">
+      {result.image && (
+        <div className="web-result-image-wrapper">
+          <img className="web-result-image" src={result.image} alt={result.title} />
+        </div>
+      )}
       <div className="web-result-header">
         <h3>{result.title}</h3>
         <span className="web-result-domain">{result.domain}</span>
@@ -268,10 +273,10 @@ export default function App() {
     setWebResults([]);
 
     try {
-      const response = await fetch('/api/web-search', {
+      const response = await fetch('/api/google-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQuery, limit: 8 })
+        body: JSON.stringify({ query: searchQuery, limit: 8, searchType: 'web' })
       });
       const data = await response.json();
       setWebResults(data.data?.results || []);
@@ -596,6 +601,17 @@ export default function App() {
                 </div>
               )}
             </section>
+            {webResults.length > 0 && (
+              <section className="web-results-panel">
+                <h2 className="section-title">Live Google Search</h2>
+                <p className="news-note">These live results are fetched directly from the Google Custom Search API.</p>
+                <section className="web-search-grid">
+                  {webResults.map((result, index) => (
+                    <WebSearchCard key={`${result.url}-${index}`} result={result} />
+                  ))}
+                </section>
+              </section>
+            )}
           </section>
         )}
 

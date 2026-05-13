@@ -3680,18 +3680,35 @@ app.get('/api/news', async (req, res) => {
 
 // New: Web Search API endpoint
 app.post('/api/web-search', async (req, res) => {
-  const { query = '', limit = 10 } = req.body;
+  const { query = '', limit = 10, searchType = 'web' } = req.body;
 
   if (!query.trim()) {
     return res.status(400).json({ success: false, message: 'Query is required' });
   }
 
   try {
-    const data = await performWebSearch(query, limit);
+    const data = await performWebSearch(query, limit, searchType);
     res.json({ success: true, data });
   } catch (error) {
     console.error('Web search failed:', error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch web search results' });
+  }
+});
+
+// New: Google Search API endpoint
+app.post('/api/google-search', async (req, res) => {
+  const { query = '', limit = 10, searchType = 'web' } = req.body;
+
+  if (!query.trim()) {
+    return res.status(400).json({ success: false, message: 'Query is required' });
+  }
+
+  try {
+    const data = await performWebSearch(query, limit, searchType);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Google search failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch Google search results' });
   }
 });
 

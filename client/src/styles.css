@@ -302,6 +302,20 @@ body {
   white-space: nowrap;
 }
 
+.web-result-image-wrapper {
+  width: 100%;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.web-result-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
 .hero-box {
   padding: 2rem;
   border-radius: 24px;

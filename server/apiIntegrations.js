@@ -189,22 +189,39 @@ export async function getNews(category = 'general', country = 'in') {
 }
 
 // Web search integration (replace with real search API in production)
-export async function performWebSearch(query, limit = 10) {
+function getSearchResultImage(item) {
+  if (item.pagemap?.cse_image?.[0]?.src) return item.pagemap.cse_image[0].src;
+  if (item.pagemap?.cse_thumbnail?.[0]?.src) return item.pagemap.cse_thumbnail[0].src;
+  if (item.image?.thumbnailLink) return item.image.thumbnailLink;
+  return null;
+}
+
+function truncateText(text, maxLength = 280) {
+  if (!text) return '';
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+export async function performWebSearch(query, limit = 10, searchType = 'web') {
   const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
   const searchEngineId = process.env.GOOGLE_CSE_ID;
   const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 10);
+  const safeQuery = (query || '').trim();
 
   if (!apiKey || !searchEngineId) {
-    return getMockSearchResults(query, safeLimit, 'Fallback Google search mock');
+    return getMockSearchResults(safeQuery, safeLimit, 'Fallback Google search mock');
   }
 
   try {
     const params = new URLSearchParams({
       key: apiKey,
       cx: searchEngineId,
-      q: query,
+      q: safeQuery,
       num: String(safeLimit),
     });
+
+    if (searchType === 'image') {
+      params.set('searchType', 'image');
+    }
 
     const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params.toString()}`);
     if (!response.ok) {
@@ -214,23 +231,24 @@ export async function performWebSearch(query, limit = 10) {
     const data = await response.json();
     const results = (data.items || []).map((item, index) => ({
       position: item.position || index + 1,
-      title: item.title,
-      url: item.link,
-      snippet: item.snippet || item.title,
+      title: item.title || 'Untitled result',
+      url: item.link || item.image?.contextLink || '#',
+      snippet: truncateText(item.snippet || item.title || 'No description available.', 220),
       domain: item.displayLink || item.link?.split('/')[2] || 'web',
-      type: item.fileFormat ? 'document' : 'website',
+      type: searchType === 'image' ? 'image' : item.fileFormat ? 'document' : 'website',
+      image: getSearchResultImage(item),
     }));
 
     return {
       results,
-      query,
+      query: safeQuery,
       totalResults: Number(data.searchInformation?.totalResults || results.length),
       searchTime: `${Number(data.searchInformation?.searchTime || 0).toFixed(2)}s`,
       source: 'Google Custom Search',
     };
   } catch (error) {
     console.error('Google Search API error:', error);
-    return getMockSearchResults(query, safeLimit, 'Google search fallback mock');
+    return getMockSearchResults(safeQuery, safeLimit, 'Google search fallback mock');
   }
 }
 
