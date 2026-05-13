@@ -3712,6 +3712,39 @@ app.post('/api/google-search', async (req, res) => {
   }
 });
 
+// New: ChatGPT-like AI chat endpoint
+app.post('/api/chat', async (req, res) => {
+  const { messages = [] } = req.body;
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ success: false, message: 'Messages are required' });
+  }
+
+  if (!openai) {
+    return res.status(503).json({ success: false, message: 'OpenAI API key is not configured' });
+  }
+
+  try {
+    const systemMessage = {
+      role: 'system',
+      content: 'You are a helpful assistant that answers questions clearly and concisely. Provide ChatGPT-style responses for programming, search, and general AI queries.'
+    };
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [systemMessage, ...messages.map((item) => ({ role: item.role, content: item.content }))],
+      max_tokens: 500,
+      temperature: 0.8,
+    });
+
+    const reply = response.choices?.[0]?.message?.content || 'I could not generate a response at this time.';
+    res.json({ success: true, data: { reply } });
+  } catch (error) {
+    console.error('Chat API error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate chat response' });
+  }
+});
+
 // New: Trending Topics API endpoint
 app.get('/api/trends', (req, res) => {
   const { category = 'technology', limit = 10 } = req.query;

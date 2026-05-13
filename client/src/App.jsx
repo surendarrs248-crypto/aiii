@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const categoryOptions = ['All', 'AI Strategy', 'Design', 'Search Tech', 'Security', 'Productivity'];
 const tagOptions = ['All', 'semantic search', 'ux', 'nlp', 'privacy', 'recommendations'];
-const tabOptions = ['Search', 'Web Search', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
+const tabOptions = ['Search', 'Web Search', 'Chat', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
 const suggestions = [
   'google custom search api',
   'ai image generator 2026',
@@ -190,6 +190,9 @@ export default function App() {
   const [webResults, setWebResults] = useState([]);
   const [webMeta, setWebMeta] = useState({ totalResults: 0, queryTimeMs: 0 });
   const [meta, setMeta] = useState({ resultCount: 0, queryTimeMs: 0 });
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -291,6 +294,35 @@ export default function App() {
       setError('Unable to connect to the web search API.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function runChat(event) {
+    event?.preventDefault();
+    const message = chatInput.trim();
+    if (!message) return;
+
+    const userMessage = { role: 'user', content: message };
+    const nextMessages = [...chatMessages, userMessage];
+    setChatMessages(nextMessages);
+    setChatInput('');
+    setChatLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: nextMessages })
+      });
+      const data = await response.json();
+      const assistantReply = data?.data?.reply || 'Sorry, I could not generate a response right now.';
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }]);
+    } catch (err) {
+      setError('Unable to connect to the chat API.');
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'There was a connection problem. Please try again.' }]);
+    } finally {
+      setChatLoading(false);
     }
   }
 
@@ -663,6 +695,43 @@ export default function App() {
                 </section>
               </section>
             )}
+          </section>
+        )}
+
+        {/* Chat Tab */}
+        {activeTab === 'Chat' && (
+          <section className="results-panel chat-panel">
+            <h2 className="section-title">AI Chat</h2>
+            {error && <div className="alert">{error}</div>}
+            <div className="chat-summary">
+              <p>Talk to a ChatGPT-style assistant for programming, search guidance, and general AI help.</p>
+            </div>
+            <div className="chat-window">
+              {chatMessages.length === 0 && !chatLoading ? (
+                <div className="empty-state">
+                  <h2>Start a conversation</h2>
+                  <p>Ask a question and get instant ChatGPT-style responses.</p>
+                </div>
+              ) : (
+                chatMessages.map((message, index) => (
+                  <div key={index} className={`chat-bubble ${message.role}`}>
+                    <span className="chat-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
+                    <p>{message.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+            <form className="chat-form" onSubmit={runChat}>
+              <input
+                type="text"
+                placeholder="Ask the AI anything..."
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+              />
+              <button type="submit" disabled={!chatInput.trim() || chatLoading}>
+                {chatLoading ? 'Sending…' : 'Send'}
+              </button>
+            </form>
           </section>
         )}
 
