@@ -443,6 +443,32 @@ export default function App() {
     }
   }
 
+  async function fetchAnalysis() {
+    if (!query.trim()) {
+      setError('Enter a query to analyze.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, depth: 'advanced' })
+      });
+      const data = await response.json();
+      setAnalysisData(data.data);
+      if (!marketData) {
+        fetchMarketData();
+      }
+    } catch (err) {
+      setError('Failed to fetch analysis');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function fetchMusic() {
     try {
       setLoading(true);
