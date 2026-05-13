@@ -3710,6 +3710,19 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
+// New: Music API endpoint
+app.get('/api/music', async (req, res) => {
+  const { language = 'english', limit = 10 } = req.query;
+
+  try {
+    const data = await getMusicTracks(language, limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Music fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch music tracks' });
+  }
+});
+
 // New: Web Search API endpoint
 app.post('/api/web-search', async (req, res) => {
   const { query = '', limit = 10, searchType = 'web' } = req.body;

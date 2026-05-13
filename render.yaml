@@ -17,6 +17,8 @@ services:
         fromSecret: GOOGLE_SEARCH_API_KEY
       - key: GOOGLE_CSE_ID
         fromSecret: GOOGLE_CSE_ID
+      - key: YOUTUBE_API_KEY
+        fromSecret: YOUTUBE_API_KEY
     healthCheckPath: /api/health
     plan: free</content>
 <parameter name="filePath">/workspaces/aiii/render.yaml
