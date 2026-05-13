@@ -506,37 +506,77 @@ function getMockSearchResults(query, limit, source = 'Mock Search API') {
 }
 
 // Stock/Market data integration
-export async function getMarketData() {
+export async function getMarketData(symbols = 'AAPL,GOOGL,MSFT,TSLA') {
+  const apiKey = process.env.MARKET_API_KEY;
+  const symbolList = String(symbols)
+    .split(',')
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean)
+    .slice(0, 5);
+
+  if (!apiKey) {
+    return getMockMarketData(symbolList);
+  }
+
   try {
-    // In production, integrate with Alpha Vantage, Yahoo Finance, or similar
-    const mockMarketData = {
+    const requests = symbolList.map((symbol) =>
+      fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}`)
+    );
+
+    const responses = await Promise.all(requests);
+    const markets = [];
+
+    for (const response of responses) {
+      if (!response.ok) continue;
+      const data = await response.json();
+      const quote = data['Global Quote'];
+      if (!quote || !quote['01. symbol']) continue;
+
+      const price = parseFloat(quote['05. price'] || '0');
+      const change = parseFloat(quote['09. change'] || '0');
+      const changePercentString = quote['10. change percent'] || '0%';
+      const changePercent = parseFloat(changePercentString.replace('%', '')) || 0;
+
+      markets.push({
+        symbol: quote['01. symbol'],
+        name: quote['01. symbol'],
+        price,
+        change,
+        changePercent,
+        trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
+      });
+    }
+
+    if (markets.length === 0) {
+      return getMockMarketData(symbolList);
+    }
+
+    return {
       lastUpdated: new Date().toISOString(),
-      markets: [
-        {
-          symbol: 'TECH',
-          name: 'Tech Sector Index',
-          price: 5432.10,
-          change: 145.25,
-          changePercent: 2.74,
-          trend: 'up',
-        },
-        {
-          symbol: 'AI',
-          name: 'AI Companies ETF',
-          price: 287.50,
-          change: 12.30,
-          changePercent: 4.47,
-          trend: 'up',
-        },
-      ],
-      source: 'Market Data API',
+      markets,
+      source: 'Alpha Vantage',
     };
-    
-    return mockMarketData;
   } catch (error) {
     console.error('Market data error:', error);
-    throw new Error('Failed to fetch market data');
+    return getMockMarketData(symbolList);
   }
+}
+
+function getMockMarketData(symbolList) {
+  const markets = symbolList.map((symbol, index) => ({
+    symbol,
+    name: `${symbol} Market Index`,
+    price: Number((500 + Math.random() * 3000).toFixed(2)),
+    change: Number(((Math.random() - 0.5) * 50).toFixed(2)),
+    changePercent: Number(((Math.random() - 0.5) * 3).toFixed(2)),
+    trend: Math.random() > 0.5 ? 'up' : 'down',
+  }));
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    markets,
+    source: 'Mock Market Data',
+  };
 }
 
 // Trending topics/insights

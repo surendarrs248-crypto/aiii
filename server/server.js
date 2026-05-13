@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import { searchData } from './searchData.js';
-import { getWeather, performWebSearch, getWikipediaSummary, getNews, getGeeksForGeeksInfo, getWikipediaInfo, getMusicTracks } from './apiIntegrations.js';
+import { getWeather, performWebSearch, getWikipediaSummary, getNews, getGeeksForGeeksInfo, getWikipediaInfo, getMusicTracks, getMarketData } from './apiIntegrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -4073,39 +4073,14 @@ app.post('/api/analyze', (req, res) => {
 });
 
 // New: Market Data endpoint
-app.get('/api/market-data', (req, res) => {
-  // Mock market data
-  const marketData = {
-    lastUpdated: new Date().toISOString(),
-    markets: [
-      {
-        symbol: 'TECH',
-        name: 'Tech Sector Index',
-        price: 5432.10,
-        change: 145.25,
-        changePercent: 2.74,
-        trend: 'up',
-      },
-      {
-        symbol: 'AI',
-        name: 'AI Companies ETF',
-        price: 287.50,
-        change: 12.30,
-        changePercent: 4.47,
-        trend: 'up',
-      },
-      {
-        symbol: 'CLOUD',
-        name: 'Cloud Services Index',
-        price: 412.75,
-        change: -8.50,
-        changePercent: -2.02,
-        trend: 'down',
-      },
-    ],
-  };
-  
-  res.json({ success: true, data: marketData });
+app.get('/api/market-data', async (req, res) => {
+  try {
+    const data = await getMarketData(req.query.symbols);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Market data fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch market data' });
+  }
 });
 
 // New: Compare results endpoint - enhanced comparison

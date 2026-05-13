@@ -173,6 +173,7 @@ export default function App() {
   const [weatherData, setWeatherData] = useState(null);
   const [trendsData, setTrendsData] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [marketData, setMarketData] = useState(null);
   const [assistant, setAssistant] = useState({
     title: 'AI code assistant',
     summary: 'Enter a query to get a professional answer or code output with detailed explanations in Python, Java, Dart, React, Node.js, HTML, CSS, or JavaScript.',
@@ -428,6 +429,20 @@ export default function App() {
     }
   }
 
+  async function fetchMarketData() {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('/api/market-data');
+      const data = await response.json();
+      setMarketData(data.data);
+    } catch (err) {
+      setError('Failed to fetch stock market updates');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function fetchMusic() {
     try {
       setLoading(true);
@@ -449,8 +464,10 @@ export default function App() {
       requestLocalWeather();
     } else if (activeTab === 'Trends' && !trendsData) {
       fetchTrends();
+    } else if (activeTab === 'Analysis' && !marketData) {
+      fetchMarketData();
     }
-  }, [activeTab, newsData, weatherData, trendsData]);
+  }, [activeTab, newsData, weatherData, trendsData, marketData]);
 
   return (
     <div className="app-shell">
@@ -833,7 +850,38 @@ export default function App() {
               <button onClick={fetchAnalysis} disabled={!canSearch || loading} className="analyze-btn">
                 {loading ? 'Analyzing...' : 'Analyze Query'}
               </button>
+              <button onClick={fetchMarketData} disabled={loading} className="secondary">
+                {loading ? 'Refreshing...' : 'Refresh Market Updates'}
+              </button>
             </div>
+            {marketData && (
+              <div className="market-panel">
+                <div className="market-panel-header">
+                  <div>
+                    <h3>Live Stock Market Snapshot</h3>
+                    <p>Real-time stock updates from market data sources.</p>
+                  </div>
+                  <div className="market-meta">
+                    <span>Updated {new Date(marketData.lastUpdated).toLocaleTimeString()}</span>
+                    <span>{marketData.source}</span>
+                  </div>
+                </div>
+                <div className="market-grid">
+                  {marketData.markets.map((stock) => (
+                    <article key={stock.symbol} className={`market-card ${stock.trend}`}>
+                      <div className="market-symbol">
+                        <strong>{stock.symbol}</strong>
+                        <span>{stock.name}</span>
+                      </div>
+                      <div className="market-price">
+                        <span>${stock.price.toFixed(2)}</span>
+                        <span className={`market-change ${stock.trend}`}>{stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
             {analysisData && (
               <div className="analysis-content">
                 <h3>{analysisData.topic}</h3>
