@@ -79,13 +79,14 @@ function mapWeatherIcon(main) {
   return '🌤️';
 }
 
-// Mock News API integration (replace with real API in production)
-export async function getNews(category = 'technology') {
-  try {
-    // In production, integrate with NewsAPI, Guardian API, or similar
-    // API Key needed: process.env.NEWS_API_KEY
-    
-    // Mock news articles
+// News API integration for live headlines
+export async function getNews(category = 'general', country = 'in') {
+  const apiKey = process.env.NEWS_API_KEY;
+  const safeCategory = category || 'general';
+  const safeCountry = country || 'in';
+
+  if (!apiKey) {
+    // Fallback mock news when no API key is configured
     const mockNews = [
       {
         id: 1,
@@ -97,6 +98,7 @@ export async function getNews(category = 'technology') {
         image: '📰',
         url: 'https://example.com/ai-breakthrough',
         sentiment: 'positive',
+        readTime: 5,
       },
       {
         id: 2,
@@ -108,6 +110,7 @@ export async function getNews(category = 'technology') {
         image: '🔍',
         url: 'https://example.com/search-update',
         sentiment: 'neutral',
+        readTime: 4,
       },
       {
         id: 3,
@@ -119,6 +122,7 @@ export async function getNews(category = 'technology') {
         image: '⚙️',
         url: 'https://example.com/js-trends',
         sentiment: 'positive',
+        readTime: 6,
       },
       {
         id: 4,
@@ -130,13 +134,51 @@ export async function getNews(category = 'technology') {
         image: '☁️',
         url: 'https://example.com/cloud-market',
         sentiment: 'positive',
+        readTime: 7,
       },
     ];
-    
+
     return {
       articles: mockNews,
       totalResults: mockNews.length,
-      category: category,
+      category: safeCategory,
+      lastUpdated: new Date().toISOString(),
+      source: 'Mock News',
+    };
+  }
+
+  try {
+    const params = new URLSearchParams({
+      apiKey,
+      country: safeCountry,
+      category: safeCategory,
+      pageSize: '10',
+      q: 'India',
+    });
+
+    const response = await fetch(`https://newsapi.org/v2/top-headlines?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`NewsAPI returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const articles = (data.articles || []).map((item, index) => ({
+      id: item.url || `news-${index}`,
+      title: item.title || 'Untitled headline',
+      description: item.description || item.content || 'No description available.',
+      source: item.source?.name || 'NewsAPI',
+      category: safeCategory,
+      date: item.publishedAt || new Date().toISOString(),
+      image: item.urlToImage || '📰',
+      url: item.url || '#',
+      sentiment: 'neutral',
+      readTime: item.content ? Math.max(2, Math.round(item.content.split(' ').length / 200)) : 4,
+    }));
+
+    return {
+      articles,
+      totalResults: Number(data.totalResults || articles.length),
+      category: safeCategory,
       lastUpdated: new Date().toISOString(),
       source: 'NewsAPI',
     };

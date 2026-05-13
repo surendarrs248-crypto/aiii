@@ -353,7 +353,7 @@ export default function App() {
   async function fetchNews() {
     try {
       setLoading(true);
-      const response = await fetch('/api/news');
+      const response = await fetch('/api/news?country=in');
       const data = await response.json();
       setNewsData(data.data);
     } catch (err) {
@@ -606,6 +606,7 @@ export default function App() {
             {error && <div className="alert">{error}</div>}
             <div className="search-controls">
               <p>Search the web with Google Custom Search integration.</p>
+              <p className="news-note">Live India news updates are fetched from an external news API.</p>
               <button onClick={runWebSearch} disabled={!canSearch || loading}>
                 {loading ? 'Searching web…' : 'Search web'}
               </button>

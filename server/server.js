@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import { searchData } from './searchData.js';
-import { getWeather, performWebSearch, getWikipediaSummary } from './apiIntegrations.js';
+import { getWeather, performWebSearch, getWikipediaSummary, getNews } from './apiIntegrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3656,72 +3656,26 @@ app.get('/api/weather', async (req, res) => {
 });
 
 // New: News/Articles API endpoint
-app.get('/api/news', (req, res) => {
-  const { category = 'all', limit = 10 } = req.query;
-  
-  // Mock news articles
-  const newsArticles = [
-    {
-      id: 1,
-      title: 'AI Breakthrough: New Language Model Achieves Record Accuracy',
-      description: 'Researchers announce a new AI model that outperforms previous benchmarks...',
-      source: 'TechNews Daily',
-      category: 'AI',
-      date: new Date(Date.now() - 3600000).toISOString(),
-      image: '📰',
-      url: 'https://example.com/article-1',
-      sentiment: 'positive',
-      readTime: 5,
-    },
-    {
-      id: 2,
-      title: 'Search Engine Updates: New Algorithm Prioritizes User Experience',
-      description: 'Major search engines announce updates to improve search relevance and UX...',
-      source: 'Web Development Weekly',
-      category: 'Search',
-      date: new Date(Date.now() - 7200000).toISOString(),
-      image: '🔍',
-      url: 'https://example.com/article-2',
-      sentiment: 'neutral',
-      readTime: 4,
-    },
-    {
-      id: 3,
-      title: 'JavaScript Framework Trends: React Remains Top Choice',
-      description: 'Annual survey shows continued dominance of React in web development...',
-      source: 'Developer Central',
-      category: 'Development',
-      date: new Date(Date.now() - 10800000).toISOString(),
-      image: '⚙️',
-      url: 'https://example.com/article-3',
-      sentiment: 'positive',
-      readTime: 6,
-    },
-    {
-      id: 4,
-      title: 'Cloud Computing Market Growing 25% Year-over-Year',
-      description: 'Industry analysts project continued growth in cloud services and adoption...',
-      source: 'Tech Business Quarterly',
-      category: 'Cloud',
-      date: new Date(Date.now() - 14400000).toISOString(),
-      image: '☁️',
-      url: 'https://example.com/article-4',
-      sentiment: 'positive',
-      readTime: 7,
-    },
-  ];
-  
-  const filtered = category === 'all' ? newsArticles : newsArticles.filter(a => a.category === category);
-  
-  res.json({
-    success: true,
-    data: {
-      articles: filtered.slice(0, parseInt(limit)),
-      totalResults: filtered.length,
-      category: category,
-      lastUpdated: new Date().toISOString(),
-    }
-  });
+app.get('/api/news', async (req, res) => {
+  const { category = 'general', country = 'in', limit = 10 } = req.query;
+
+  try {
+    const data = await getNews(category, country);
+    res.json({
+      success: true,
+      data: {
+        articles: (data.articles || []).slice(0, parseInt(limit, 10)),
+        totalResults: data.totalResults || (data.articles || []).length,
+        category: category,
+        country: country,
+        lastUpdated: data.lastUpdated || new Date().toISOString(),
+        source: data.source || 'NewsAPI',
+      }
+    });
+  } catch (error) {
+    console.error('News fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch news' });
+  }
 });
 
 // New: Web Search API endpoint
