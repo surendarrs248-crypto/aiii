@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const categoryOptions = ['All', 'AI Strategy', 'Design', 'Search Tech', 'Security', 'Productivity'];
 const tagOptions = ['All', 'semantic search', 'ux', 'nlp', 'privacy', 'recommendations'];
-const tabOptions = ['Search', 'Web Search', 'Chat', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
+const tabOptions = ['Search', 'Web Search', 'Chat', 'News', 'Weather', 'Trends', 'Analysis', 'Compare', 'Music'];
 const suggestions = [
   'google custom search api',
   'ai image generator 2026',
@@ -195,6 +195,8 @@ export default function App() {
   const [chatLoading, setChatLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [musicData, setMusicData] = useState(null);
+  const [musicLanguage, setMusicLanguage] = useState('english');
 
   useEffect(() => {
     const stored = window.localStorage.getItem('aiii-search-history');
@@ -426,22 +428,14 @@ export default function App() {
     }
   }
 
-  async function fetchAnalysis() {
+  async function fetchMusic() {
     try {
-      if (!query.trim()) {
-        setError('Please enter a query to analyze');
-        return;
-      }
       setLoading(true);
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query, depth: 'standard' })
-      });
+      const response = await fetch(`/api/music?language=${musicLanguage}&limit=10`);
       const data = await response.json();
-      setAnalysisData(data.data);
+      setMusicData(data.data);
     } catch (err) {
-      setError('Failed to fetch analysis');
+      setError('Failed to fetch music');
     } finally {
       setLoading(false);
     }
@@ -732,6 +726,53 @@ export default function App() {
                 {chatLoading ? 'Sending…' : 'Send'}
               </button>
             </form>
+          </section>
+        )}
+
+        {/* Music Tab */}
+        {activeTab === 'Music' && (
+          <section className="results-panel">
+            <h2 className="section-title">Live Music Player</h2>
+            {error && <div className="alert">{error}</div>}
+            <div className="music-controls">
+              <p>Play live music from Tamil, English, Hindi, and Telugu.</p>
+              <div className="language-selector">
+                <label htmlFor="musicLanguage">Select Language:</label>
+                <select
+                  id="musicLanguage"
+                  value={musicLanguage}
+                  onChange={(event) => setMusicLanguage(event.target.value)}
+                >
+                  <option value="english">English</option>
+                  <option value="hindi">Hindi</option>
+                  <option value="tamil">Tamil</option>
+                  <option value="telugu">Telugu</option>
+                </select>
+                <button onClick={fetchMusic} disabled={loading}>
+                  {loading ? 'Loading…' : 'Load Music'}
+                </button>
+              </div>
+            </div>
+            <div className="music-grid">
+              {musicData?.tracks?.map((track) => (
+                <div key={track.id} className="music-card">
+                  <div className="music-thumbnail">
+                    {track.thumbnail.startsWith('http') ? (
+                      <img src={track.thumbnail} alt={track.title} />
+                    ) : (
+                      <span>{track.thumbnail}</span>
+                    )}
+                  </div>
+                  <div className="music-info">
+                    <h3>{track.title}</h3>
+                    <p>{track.artist}</p>
+                    <a href={track.url} target="_blank" rel="noreferrer" className="music-play">
+                      ▶️ Play
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
         )}
 

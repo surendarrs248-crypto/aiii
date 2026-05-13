@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import { searchData } from './searchData.js';
-import { getWeather, performWebSearch, getWikipediaSummary, getNews } from './apiIntegrations.js';
+import { getWeather, performWebSearch, getWikipediaSummary, getNews, getGeeksForGeeksInfo, getWikipediaInfo, getMusicTracks } from './apiIntegrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3563,9 +3563,20 @@ app.post('/api/search', async (req, res) => {
     }
 
     try {
-      wikiSummary = await getWikipediaSummary(query);
+      wikiSummary = await getWikipediaInfo(query);
     } catch (error) {
       console.error('Wikipedia lookup failed:', error.message);
+    }
+
+    try {
+      const gfgInfo = await getGeeksForGeeksInfo(query);
+      if (gfgInfo) {
+        // Add to assistant context
+        assistant.source = gfgInfo.source;
+        assistant.followUps.push(`Learn more on Geeks for Geeks: ${gfgInfo.url}`);
+      }
+    } catch (error) {
+      console.error('Geeks for Geeks lookup failed:', error.message);
     }
   }
 
@@ -3727,7 +3738,7 @@ app.post('/api/chat', async (req, res) => {
   try {
     const systemMessage = {
       role: 'system',
-      content: 'You are a helpful assistant that answers questions clearly and concisely. Provide ChatGPT-style responses for programming, search, and general AI queries.'
+      content: 'You are a helpful assistant that answers questions clearly and concisely. Provide ChatGPT-style responses for programming, search, and general AI queries. Use information from Geeks for Geeks and Wikipedia when relevant.'
     };
 
     const response = await openai.chat.completions.create({
@@ -3742,6 +3753,19 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     console.error('Chat API error:', error);
     res.status(500).json({ success: false, message: 'Failed to generate chat response' });
+  }
+});
+
+// New: Music API endpoint
+app.get('/api/music', async (req, res) => {
+  const { language = 'english', limit = 10 } = req.query;
+
+  try {
+    const data = await getMusicTracks(language, limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Music fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch music tracks' });
   }
 });
 

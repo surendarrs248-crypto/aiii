@@ -1,6 +1,148 @@
 // External API Integrations for Weather, News, and Web Search
 // This module handles all external API calls
 
+// Geeks for Geeks integration
+export async function getGeeksForGeeksInfo(query) {
+  try {
+    // Use Geeks for Geeks search API or web scraping
+    const searchUrl = `https://www.geeksforgeeks.org/search/?q=${encodeURIComponent(query)}`;
+    const response = await fetch(searchUrl);
+    if (!response.ok) {
+      throw new Error(`Geeks for Geeks search returned ${response.status}`);
+    }
+
+    const html = await response.text();
+    // Simple parsing for demonstration - in production, use a proper scraper
+    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+    const contentMatch = html.match(/<meta name="description" content="(.*?)"/i);
+
+    return {
+      title: titleMatch ? titleMatch[1] : 'Geeks for Geeks Result',
+      description: contentMatch ? contentMatch[1] : 'Programming tutorial and explanation.',
+      url: searchUrl,
+      source: 'Geeks for Geeks'
+    };
+  } catch (error) {
+    console.error('Geeks for Geeks fetch error:', error);
+    return null;
+  }
+}
+
+// Enhanced Wikipedia integration
+export async function getWikipediaInfo(query) {
+  if (!query || typeof query !== 'string') {
+    return null;
+  }
+
+  try {
+    const searchParams = new URLSearchParams({
+      action: 'query',
+      list: 'search',
+      srsearch: query,
+      format: 'json',
+      origin: '*',
+      srlimit: '1',
+      srprop: 'title,snippet'
+    });
+    const searchResponse = await fetch(`https://en.wikipedia.org/w/api.php?${searchParams.toString()}`);
+    if (!searchResponse.ok) {
+      throw new Error(`Wikipedia search returned ${searchResponse.status}`);
+    }
+
+    const searchData = await searchResponse.json();
+    const page = searchData.query?.search?.[0];
+    if (!page?.title) {
+      return null;
+    }
+
+    const title = page.title;
+    const summaryResponse = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+    if (!summaryResponse.ok) {
+      throw new Error(`Wikipedia summary returned ${summaryResponse.status}`);
+    }
+
+    const summaryData = await summaryResponse.json();
+    return {
+      title: summaryData.title,
+      extract: summaryData.extract || '',
+      url: summaryData.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+      thumbnail: summaryData.thumbnail?.source || null,
+      source: 'Wikipedia'
+    };
+  } catch (error) {
+    console.error('Wikipedia lookup error:', error);
+    return null;
+  }
+}
+
+// Music integration using YouTube API
+export async function getMusicTracks(language, limit = 10) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    return getMockMusicTracks(language, limit);
+  }
+
+  try {
+    const languageQueries = {
+      tamil: 'tamil songs latest',
+      english: 'english songs latest',
+      hindi: 'hindi songs latest',
+      telugu: 'telugu songs latest'
+    };
+
+    const query = languageQueries[language.toLowerCase()] || 'popular songs';
+    const params = new URLSearchParams({
+      part: 'snippet',
+      q: query,
+      type: 'video',
+      maxResults: String(limit),
+      key: apiKey,
+      videoCategoryId: '10' // Music category
+    });
+
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`YouTube API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const tracks = (data.items || []).map((item) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      artist: item.snippet.channelTitle,
+      thumbnail: item.snippet.thumbnails?.default?.url || '',
+      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      language: language
+    }));
+
+    return {
+      tracks,
+      totalResults: data.pageInfo?.totalResults || tracks.length,
+      source: 'YouTube'
+    };
+  } catch (error) {
+    console.error('YouTube music fetch error:', error);
+    return getMockMusicTracks(language, limit);
+  }
+}
+
+function getMockMusicTracks(language, limit) {
+  const mockTracks = Array.from({ length: limit }, (_, index) => ({
+    id: `mock-${language}-${index}`,
+    title: `${language.charAt(0).toUpperCase() + language.slice(1)} Song ${index + 1}`,
+    artist: 'Popular Artist',
+    thumbnail: '🎵',
+    url: '#',
+    language: language
+  }));
+
+  return {
+    tracks: mockTracks,
+    totalResults: mockTracks.length,
+    source: 'Mock Music'
+  };
+}
+
 // Weather API integration (replace with real API in production)
 export async function getWeather(lat, lon, location = 'Local area') {
   const apiKey = process.env.OPENWEATHER_API_KEY;
