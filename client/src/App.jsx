@@ -4,15 +4,34 @@ const categoryOptions = ['All', 'AI Strategy', 'Design', 'Search Tech', 'Securit
 const tagOptions = ['All', 'semantic search', 'ux', 'nlp', 'privacy', 'recommendations'];
 const tabOptions = ['Search', 'Web Search', 'News', 'Weather', 'Trends', 'Analysis', 'Compare'];
 const suggestions = [
-  'python data analysis',
-  'java enterprise development',
-  'dart flutter app',
-  'react component example',
-  'node js api',
-  'html semantic structure',
-  'css grid layout',
-  'javascript es6 features'
+  'google custom search api',
+  'ai image generator 2026',
+  'react 19 release notes',
+  'best android update features',
+  'openai gpt-4o image support',
+  'how to build search ranking model',
+  'latest chrome privacy settings',
+  'semantic search engine architecture'
 ];
+const defaultSearchHistory = [
+  'Google I/O 2026 highlights',
+  'best AI image generator 2026',
+  'Google Custom Search API setup',
+  'React 19 features and upgrade guide',
+  'new Android update release date',
+  'OpenAI GPT-4o image generation examples',
+  'AI search ranking factors 2026',
+  'Chrome privacy controls update'
+];
+
+function getHistoryIcon(term) {
+  const lower = term.toLowerCase();
+  if (lower.includes('image') || lower.includes('photo')) return '🖼️';
+  if (lower.includes('google') || lower.includes('search')) return '🔎';
+  if (lower.includes('ai') || lower.includes('openai')) return '🤖';
+  if (lower.includes('react') || lower.includes('android')) return '⚙️';
+  return '⏱️';
+}
 
 function formatScore(score) {
   return `${Math.round(score)}% relevance`;
@@ -159,7 +178,7 @@ export default function App() {
     codeSnippet: '',
     source: 'AI knowledge base'
   });
-  const [searchHistory, setSearchHistory] = useState([]);
+  const [searchHistory, setSearchHistory] = useState(defaultSearchHistory);
   const historyLimit = 6;
   const [compareTopics, setCompareTopics] = useState(['', '', '']);
   const [compareData, setCompareData] = useState(null);
@@ -173,7 +192,10 @@ export default function App() {
     const stored = window.localStorage.getItem('aiii-search-history');
     if (stored) {
       try {
-        setSearchHistory(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSearchHistory(parsed);
+        }
       } catch (e) {
         window.localStorage.removeItem('aiii-search-history');
       }
@@ -455,6 +477,7 @@ export default function App() {
                     className="history-pill"
                     onClick={() => runSearch(null, term)}
                   >
+                    <span className="history-icon">{getHistoryIcon(term)}</span>
                     {term}
                   </button>
                 ))}

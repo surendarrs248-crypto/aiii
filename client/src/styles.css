@@ -142,12 +142,24 @@ body {
 }
 
 .history-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 999px;
   background: rgba(30, 41, 59, 0.85);
   color: #e2e8f0;
   padding: 0.65rem 0.95rem;
   cursor: pointer;
+}
+
+.history-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.95rem;
 }
 
 .hero-panel__visual {
