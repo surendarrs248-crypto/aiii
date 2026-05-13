@@ -3608,8 +3608,29 @@ app.post('/api/search', async (req, res) => {
         ? `Wikipedia summary:\n${wikiSummary.extract}\nSource: ${wikiSummary.url}`
         : '';
       const prompt = isCodeSnippetInput
-        ? `You are a professional programming assistant. The user's input is a code snippet that must be explained line by line. Do not generate new code. Explain every single line of the provided code, with syntax, behavior, purpose, and any relevant best practices from W3Schools or similar resources. If the code uses HTML, CSS, JavaScript, Python, Java, Dart, React, Node.js, or backend concepts, reference the correct tutorial links. Provide a clean explanation that maps directly to the pasted code.\n\nCode to explain:\n${query}`
-        : `You are a professional AI search engine assistant specializing in programming languages and web development. Answer the user query directly and concisely. If the query asks for code, examples, or implementation in any programming language (Python, Java, Dart, React JS, Node JS, HTML, CSS, JavaScript), provide a complete, working code snippet with extremely detailed line-by-line comments explaining each part of the code. Include explanations for:\n\n- Variable declarations and their purposes\n- Function definitions and parameters\n- Control structures (loops, conditionals)\n- Class definitions and methods\n- API calls and data handling\n- DOM manipulation and event handling\n- Framework-specific concepts\n- Best practices from W3Schools tutorials\n- Syntax rules and conventions\n- Error handling and edge cases\n- Performance considerations\n\nFor each programming language, reference W3Schools best practices and include links to relevant W3Schools tutorials. Explain every single line of code in detail, including why certain approaches are used and what alternatives exist.\n\nProgramming Language References:\n- Python: https://www.w3schools.com/python/\n- Java: https://www.w3schools.com/java/\n- Dart: https://www.w3schools.com/dart/\n- React JS: https://www.w3schools.com/react/\n- Node.js: https://www.w3schools.com/nodejs/\n- HTML: https://www.w3schools.com/html/\n- CSS: https://www.w3schools.com/css/\n- JavaScript: https://www.w3schools.com/js/\n\nIf it's a general question, give a brief answer. Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.\n\n${webContext}\n\n${wikiContext}`;
+        ? `You are a professional programming assistant with access to comprehensive knowledge sources including Geeks for Geeks tutorials, Wikipedia articles, live news, weather data, and Google search results. The user's input is a code snippet that must be explained line by line. Do not generate new code. Explain every single line of the provided code, with syntax, behavior, purpose, and any relevant best practices from W3Schools, Geeks for Geeks, or similar resources. If the code uses HTML, CSS, JavaScript, Python, Java, Dart, React, Node.js, or backend concepts, reference the correct tutorial links and best practices from available sources.
+
+Code to explain:\n${query}`
+        : `You are a comprehensive AI assistant with access to multiple knowledge sources:
+
+KNOWLEDGE SOURCES:
+- Geeks for Geeks: Programming tutorials and technical explanations
+- Wikipedia: Encyclopedia articles and general knowledge
+- NewsAPI/Inshorts: Live news headlines (India-focused)
+- OpenWeatherMap: Weather forecasts and conditions
+- Google Custom Search: Web search results and snippets
+- Local Database: AI, design, security, productivity topics
+- YouTube Music: Tracks in Tamil, English, Hindi, Telugu languages
+
+When answering, leverage relevant information from these sources. For programming queries, use Geeks for Geeks and Wikipedia. For current events, reference live news. For weather, provide forecasts. For music, suggest tracks.
+
+Query: "${query}". Context: ${results[0]?.title ? `Top result: "${results[0].title}" - ${results[0].snippet}` : 'No specific results found'}.
+
+${webContext}
+
+${wikiContext}
+
+Provide a ChatGPT-style response using all available knowledge.`;
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
@@ -3723,6 +3744,41 @@ app.post('/api/google-search', async (req, res) => {
   }
 });
 
+// Helper function to extract topics from user message
+function extractTopics(message) {
+  const lowerMessage = message.toLowerCase();
+  const topics = [];
+
+  // Programming topics
+  if (lowerMessage.includes('javascript') || lowerMessage.includes('js')) topics.push('JavaScript');
+  if (lowerMessage.includes('python')) topics.push('Python');
+  if (lowerMessage.includes('react')) topics.push('React');
+  if (lowerMessage.includes('node')) topics.push('Node.js');
+  if (lowerMessage.includes('html')) topics.push('HTML');
+  if (lowerMessage.includes('css')) topics.push('CSS');
+
+  // Technology topics
+  if (lowerMessage.includes('ai') || lowerMessage.includes('artificial intelligence')) topics.push('Artificial Intelligence');
+  if (lowerMessage.includes('machine learning') || lowerMessage.includes('ml')) topics.push('Machine Learning');
+  if (lowerMessage.includes('data science')) topics.push('Data Science');
+  if (lowerMessage.includes('cybersecurity') || lowerMessage.includes('security')) topics.push('Cybersecurity');
+  if (lowerMessage.includes('blockchain')) topics.push('Blockchain');
+  if (lowerMessage.includes('cloud')) topics.push('Cloud Computing');
+
+  // General topics
+  if (lowerMessage.includes('weather')) topics.push('Weather');
+  if (lowerMessage.includes('news')) topics.push('News');
+  if (lowerMessage.includes('music')) topics.push('Music');
+
+  // If no specific topics found, use the first few words as topic
+  if (topics.length === 0) {
+    const words = message.split(' ').slice(0, 3).join(' ');
+    topics.push(words);
+  }
+
+  return topics.slice(0, 3); // Limit to 3 topics
+}
+
 // New: ChatGPT-like AI chat endpoint
 app.post('/api/chat', async (req, res) => {
   const { messages = [] } = req.body;
@@ -3736,9 +3792,53 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
+    const userMessage = messages[messages.length - 1]?.content || '';
+    const topics = extractTopics(userMessage);
+
+    // Fetch relevant knowledge for the topics
+    let knowledgeContext = '';
+    for (const topic of topics) {
+      try {
+        const knowledgeResponse = await fetch(`${req.protocol}://${req.get('host')}/api/knowledge?topic=${encodeURIComponent(topic)}`);
+        const knowledgeData = await knowledgeResponse.json();
+
+        if (knowledgeData.success && knowledgeData.data) {
+          knowledgeContext += `\n\nKnowledge about "${topic}":\n`;
+          Object.entries(knowledgeData.data).forEach(([source, data]) => {
+            if (data) {
+              const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
+              knowledgeContext += `- ${source}: ${dataStr.substring(0, 300)}...\n`;
+            }
+          });
+        }
+      } catch (error) {
+        console.log(`Could not fetch knowledge for ${topic}:`, error.message);
+      }
+    }
     const systemMessage = {
       role: 'system',
-      content: 'You are a helpful assistant that answers questions clearly and concisely. Provide ChatGPT-style responses for programming, search, and general AI queries. Use information from Geeks for Geeks and Wikipedia when relevant.'
+        content: `You are a comprehensive AI assistant with access to multiple knowledge sources. You have information from:
+
+- Programming tutorials and explanations from Geeks for Geeks
+- Encyclopedia articles from Wikipedia
+- Live news from NewsAPI and Inshorts (India-focused)
+- Weather data from OpenWeatherMap
+- Google Custom Search results
+- Music tracks from YouTube (Tamil, English, Hindi, Telugu)
+- Local search data on AI, design, security, productivity, and more
+- User chat history and preferences
+
+When answering questions:
+- Use relevant information from these sources when applicable
+- Cite sources when providing factual information
+- For programming questions, reference Geeks for Geeks and Wikipedia
+- For current events, use live news data
+- For weather, provide accurate forecasts
+- For music recommendations, suggest tracks from available languages
+- Maintain ChatGPT-style conversational responses
+- Be helpful, accurate, and concise
+
+${knowledgeContext ? `Additional Context from Knowledge Base:\n${knowledgeContext}` : ''}`
     };
 
     const response = await openai.chat.completions.create({
@@ -3756,16 +3856,42 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// New: Music API endpoint
-app.get('/api/music', async (req, res) => {
-  const { language = 'english', limit = 10 } = req.query;
+// New: Knowledge Base API endpoint
+app.get('/api/knowledge', async (req, res) => {
+  const { topic, source } = req.query;
 
   try {
-    const data = await getMusicTracks(language, limit);
-    res.json({ success: true, data });
+    let knowledge = {};
+
+    if (source === 'geeksforgeeks' || !source) {
+      knowledge.geeksforgeeks = await getGeeksForGeeksInfo(topic) || null;
+    }
+
+    if (source === 'wikipedia' || !source) {
+      knowledge.wikipedia = await getWikipediaInfo(topic) || null;
+    }
+
+    if (source === 'news' || !source) {
+      const newsData = await getNews('general', 'in');
+      knowledge.news = newsData.articles?.slice(0, 5) || [];
+    }
+
+    if (source === 'weather' || !source) {
+      knowledge.weather = await getWeather(null, null, 'Global') || null;
+    }
+
+    if (source === 'music' || !source) {
+      knowledge.music = await getMusicTracks('english', 5) || null;
+    }
+
+    if (source === 'search' || !source) {
+      knowledge.search = await performWebSearch(topic, 5) || null;
+    }
+
+    res.json({ success: true, data: knowledge });
   } catch (error) {
-    console.error('Music fetch failed:', error.message);
-    res.status(500).json({ success: false, message: 'Failed to fetch music tracks' });
+    console.error('Knowledge fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch knowledge' });
   }
 });
 
