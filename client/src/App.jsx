@@ -13,6 +13,13 @@ const suggestions = [
   'latest chrome privacy settings',
   'semantic search engine architecture'
 ];
+const chatPromptSuggestions = [
+  'Show me a React component for a login form.',
+  'Explain how semantic search works in plain English.',
+  'Help me design a chatbot UI for my AI app.',
+  'Generate a JavaScript function for sorting search results.',
+  'What are the best practices for conversational UX?'
+];
 const defaultSearchHistory = [
   'Google I/O 2026 highlights',
   'best AI image generator 2026',
@@ -197,6 +204,31 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [musicData, setMusicData] = useState(null);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('aiii-chat-messages');
+    if (saved) {
+      try {
+        setChatMessages(JSON.parse(saved));
+      } catch (err) {
+        console.warn('Unable to load saved chat messages', err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('aiii-chat-messages', JSON.stringify(chatMessages));
+  }, [chatMessages]);
+
+  function clearChat() {
+    setChatMessages([]);
+    setError(null);
+    window.localStorage.removeItem('aiii-chat-messages');
+  }
+
+  function useChatSuggestion(suggestion) {
+    setChatInput(suggestion);
+  }
   const [musicLanguage, setMusicLanguage] = useState('english');
 
   useEffect(() => {
@@ -740,12 +772,32 @@ export default function App() {
           <section className="results-panel chat-panel">
             <h2 className="section-title">AI Chat</h2>
             {error && <div className="alert">{error}</div>}
-            <div className="chat-summary">
-              <p>Talk to a ChatGPT-style assistant for programming, search guidance, and general AI help.</p>
+                    <div className="chat-summary">
+              <div className="chat-header">
+                <div>
+                  <span className="assistant-badge">ChatGPT-style AI</span>
+                  <p>Talk to a conversational assistant for programming, search guidance, and UI/UX design ideas.</p>
+                </div>
+                <button type="button" className="ghost-button" onClick={clearChat}>
+                  Clear conversation
+                </button>
+              </div>
+              <div className="chat-suggestions">
+                {chatPromptSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="suggestion-pill"
+                    onClick={() => useChatSuggestion(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="chat-window">
               {chatMessages.length === 0 && !chatLoading ? (
-                <div className="empty-state">
+                <div className="empty-state chat-empty">
                   <h2>Start a conversation</h2>
                   <p>Ask a question and get instant ChatGPT-style responses.</p>
                 </div>
@@ -757,13 +809,20 @@ export default function App() {
                   </div>
                 ))
               )}
+              {chatLoading && (
+                <div className="chat-bubble assistant loading">
+                  <span className="chat-role">Assistant</span>
+                  <p>Thinking...</p>
+                </div>
+              )}
             </div>
             <form className="chat-form" onSubmit={runChat}>
               <input
                 type="text"
-                placeholder="Ask the AI anything..."
+                placeholder={chatLoading ? 'Waiting for AI response…' : 'Ask the AI anything...'}
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
+                disabled={chatLoading}
               />
               <button type="submit" disabled={!chatInput.trim() || chatLoading}>
                 {chatLoading ? 'Sending…' : 'Send'}

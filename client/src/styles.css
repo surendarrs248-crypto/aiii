@@ -279,6 +279,62 @@ body {
 .chat-summary {
   color: #cbd5e1;
   margin-bottom: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.assistant-badge {
+  display: inline-flex;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.16);
+  color: #bfdbfe;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ghost-button {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: transparent;
+  color: #f8fafc;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ghost-button:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.36);
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.suggestion-pill {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #cbd5e1;
+  padding: 0.7rem 1rem;
+  font-size: 0.93rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.suggestion-pill:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
 }
 
 .chat-window {
@@ -294,31 +350,51 @@ body {
 
 .chat-bubble {
   max-width: 100%;
-  padding: 1rem 1.1rem;
-  border-radius: 20px;
-  line-height: 1.5;
-  background: rgba(30, 41, 59, 0.92);
+  padding: 1rem 1.15rem;
+  border-radius: 22px;
+  line-height: 1.6;
+  background: rgba(30, 41, 59, 0.96);
   color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.08);
 }
 
 .chat-bubble.user {
   align-self: flex-end;
-  background: rgba(59, 130, 246, 0.15);
-  color: #bfdbfe;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(59, 130, 246, 0.12));
+  color: #dbeafe;
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 .chat-bubble.assistant {
   align-self: flex-start;
-  background: rgba(51, 65, 85, 0.92);
+  background: rgba(51, 65, 85, 0.95);
+}
+
+.chat-bubble.loading {
+  opacity: 0.85;
 }
 
 .chat-role {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.55rem;
   font-size: 0.82rem;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.chat-empty {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  text-align: center;
+  color: #cbd5e1;
+}
+
+.chat-empty h2 {
+  margin: 0;
+  color: #f8fafc;
 }
 
 .chat-form {
