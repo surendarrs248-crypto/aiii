@@ -80,112 +80,158 @@ function mapWeatherIcon(main) {
 }
 
 // News API integration for live headlines
-export async function getNews(category = 'general', country = 'in') {
-  const apiKey = process.env.NEWS_API_KEY;
-  const safeCategory = category || 'general';
-  const safeCountry = country || 'in';
+const inshortsCategories = new Set([
+  'all', 'national', 'business', 'sports', 'world', 'politics', 'technology', 'startup', 'entertainment', 'science', 'automobile'
+]);
 
-  if (!apiKey) {
-    // Fallback mock news when no API key is configured
-    const mockNews = [
-      {
-        id: 1,
-        title: 'AI Breakthrough: New Language Model Achieves Record Accuracy',
-        description: 'Researchers announce a new AI model that outperforms previous benchmarks...',
-        source: 'TechNews Daily',
-        category: 'AI',
-        date: new Date(Date.now() - 3600000).toISOString(),
-        image: '📰',
-        url: 'https://example.com/ai-breakthrough',
-        sentiment: 'positive',
-        readTime: 5,
-      },
-      {
-        id: 2,
-        title: 'Search Engine Updates: New Algorithm Prioritizes User Experience',
-        description: 'Major search engines announce updates to improve search relevance...',
-        source: 'Web Development Weekly',
-        category: 'Search',
-        date: new Date(Date.now() - 7200000).toISOString(),
-        image: '🔍',
-        url: 'https://example.com/search-update',
-        sentiment: 'neutral',
-        readTime: 4,
-      },
-      {
-        id: 3,
-        title: 'JavaScript Framework Trends: React Remains Top Choice',
-        description: 'Annual survey shows continued dominance of React in web development...',
-        source: 'Developer Central',
-        category: 'Development',
-        date: new Date(Date.now() - 10800000).toISOString(),
-        image: '⚙️',
-        url: 'https://example.com/js-trends',
-        sentiment: 'positive',
-        readTime: 6,
-      },
-      {
-        id: 4,
-        title: 'Cloud Computing Market Growing 25% Year-over-Year',
-        description: 'Industry analysts project continued growth in cloud services...',
-        source: 'Tech Business Quarterly',
-        category: 'Cloud',
-        date: new Date(Date.now() - 14400000).toISOString(),
-        image: '☁️',
-        url: 'https://example.com/cloud-market',
-        sentiment: 'positive',
-        readTime: 7,
-      },
-    ];
+function sanitizeNewsCategory(category) {
+  const lower = String(category || 'all').toLowerCase().trim();
+  return inshortsCategories.has(lower) ? lower : 'all';
+}
 
-    return {
-      articles: mockNews,
-      totalResults: mockNews.length,
-      category: safeCategory,
-      lastUpdated: new Date().toISOString(),
-      source: 'Mock News',
-    };
-  }
-
+async function fetchInshortsNews(category = 'all') {
   try {
-    const params = new URLSearchParams({
-      apiKey,
-      country: safeCountry,
-      category: safeCategory,
-      pageSize: '10',
-      q: 'India',
-    });
-
-    const response = await fetch(`https://newsapi.org/v2/top-headlines?${params.toString()}`);
+    const safeCategory = sanitizeNewsCategory(category);
+    const response = await fetch(`https://inshorts.deta.dev/news?category=${encodeURIComponent(safeCategory)}`);
     if (!response.ok) {
-      throw new Error(`NewsAPI returned ${response.status}`);
+      throw new Error(`Inshorts API returned ${response.status}`);
     }
 
     const data = await response.json();
-    const articles = (data.articles || []).map((item, index) => ({
-      id: item.url || `news-${index}`,
+    const articles = (data.data || []).map((item, index) => ({
+      id: item.readMoreUrl || `${safeCategory}-${index}`,
       title: item.title || 'Untitled headline',
-      description: item.description || item.content || 'No description available.',
-      source: item.source?.name || 'NewsAPI',
+      description: item.content || item.title || 'No description available.',
+      source: item.author || 'Inshorts',
       category: safeCategory,
-      date: item.publishedAt || new Date().toISOString(),
-      image: item.urlToImage || '📰',
-      url: item.url || '#',
+      date: item.date || new Date().toISOString(),
+      image: item.imageUrl || '📰',
+      url: item.readMoreUrl || '#',
       sentiment: 'neutral',
-      readTime: item.content ? Math.max(2, Math.round(item.content.split(' ').length / 200)) : 4,
+      readTime: item.content ? Math.max(1, Math.round(item.content.split(' ').length / 180)) : 3,
     }));
 
     return {
       articles,
-      totalResults: Number(data.totalResults || articles.length),
+      totalResults: articles.length,
       category: safeCategory,
       lastUpdated: new Date().toISOString(),
-      source: 'NewsAPI',
+      source: 'Inshorts',
     };
   } catch (error) {
-    console.error('News API error:', error);
-    throw new Error('Failed to fetch news');
+    console.error('Inshorts API error:', error);
+    return null;
   }
+}
+
+export async function getNews(category = 'general', country = 'in') {
+  const apiKey = process.env.NEWS_API_KEY;
+  const safeCategory = sanitizeNewsCategory(category === 'general' ? 'all' : category);
+  const safeCountry = country || 'in';
+
+  if (apiKey) {
+    try {
+      const params = new URLSearchParams({
+        apiKey,
+        country: safeCountry,
+        category: safeCategory,
+        pageSize: '10',
+      });
+
+      const response = await fetch(`https://newsapi.org/v2/top-headlines?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`NewsAPI returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      const articles = (data.articles || []).map((item, index) => ({
+        id: item.url || `news-${index}`,
+        title: item.title || 'Untitled headline',
+        description: item.description || item.content || 'No description available.',
+        source: item.source?.name || 'NewsAPI',
+        category: safeCategory,
+        date: item.publishedAt || new Date().toISOString(),
+        image: item.urlToImage || '📰',
+        url: item.url || '#',
+        sentiment: 'neutral',
+        readTime: item.content ? Math.max(2, Math.round(item.content.split(' ').length / 200)) : 4,
+      }));
+
+      return {
+        articles,
+        totalResults: Number(data.totalResults || articles.length),
+        category: safeCategory,
+        lastUpdated: new Date().toISOString(),
+        source: 'NewsAPI',
+      };
+    } catch (error) {
+      console.error('NewsAPI error, falling back to Inshorts:', error);
+    }
+  }
+
+  const inshortsData = await fetchInshortsNews(safeCategory);
+  if (inshortsData) {
+    return inshortsData;
+  }
+
+  const mockNews = [
+    {
+      id: 1,
+      title: 'AI Breakthrough: New Language Model Achieves Record Accuracy',
+      description: 'Researchers announce a new AI model that outperforms previous benchmarks...',
+      source: 'TechNews Daily',
+      category: safeCategory,
+      date: new Date(Date.now() - 3600000).toISOString(),
+      image: '📰',
+      url: 'https://example.com/ai-breakthrough',
+      sentiment: 'positive',
+      readTime: 5,
+    },
+    {
+      id: 2,
+      title: 'Search Engine Updates: New Algorithm Prioritizes User Experience',
+      description: 'Major search engines announce updates to improve search relevance...',
+      source: 'Web Development Weekly',
+      category: safeCategory,
+      date: new Date(Date.now() - 7200000).toISOString(),
+      image: '🔍',
+      url: 'https://example.com/search-update',
+      sentiment: 'neutral',
+      readTime: 4,
+    },
+    {
+      id: 3,
+      title: 'JavaScript Framework Trends: React Remains Top Choice',
+      description: 'Annual survey shows continued dominance of React in web development...',
+      source: 'Developer Central',
+      category: safeCategory,
+      date: new Date(Date.now() - 10800000).toISOString(),
+      image: '⚙️',
+      url: 'https://example.com/js-trends',
+      sentiment: 'positive',
+      readTime: 6,
+    },
+    {
+      id: 4,
+      title: 'Cloud Computing Market Growing 25% Year-over-Year',
+      description: 'Industry analysts project continued growth in cloud services...',
+      source: 'Tech Business Quarterly',
+      category: safeCategory,
+      date: new Date(Date.now() - 14400000).toISOString(),
+      image: '☁️',
+      url: 'https://example.com/cloud-market',
+      sentiment: 'positive',
+      readTime: 7,
+    },
+  ];
+
+  return {
+    articles: mockNews,
+    totalResults: mockNews.length,
+    category: safeCategory,
+    lastUpdated: new Date().toISOString(),
+    source: 'Mock News',
+  };
 }
 
 // Web search integration (replace with real search API in production)
